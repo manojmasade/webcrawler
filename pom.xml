@@ -64,7 +64,7 @@
 			  <archive>
 				<manifest>
 					<!-- Jar file entry point -->
-					<mainClass>com.imaginea.training.crawler</mainClass>
+					<mainClass>com.imaginea.training.crawler.App</mainClass>
 				</manifest>
 			  </archive>
 			</configuration>
