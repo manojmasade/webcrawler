@@ -23,7 +23,7 @@ public class Parser {
 	private static final Logger logger = LoggerFactory.getLogger(Parser.class);
 
 	/**
-	 * Multiple years
+	 * Return the <table></table> which contains emails of Multiple years
 	 * @param page
 	 * @param yearsCSV
 	 * @return
@@ -38,7 +38,7 @@ public class Parser {
 	}
 	
 	/**
-	 * Single year
+	 * Return the <table></table> which contains emails of Single year
 	 * @param page
 	 * @param year
 	 * @return
@@ -46,9 +46,10 @@ public class Parser {
 	public HtmlElement parseTableForYear(HtmlPage page, String year){
 		// Get all years table elements
 		String sourceYear = null;
-		List<HtmlElement> table_yearElements = page.getBody().getElementsByAttribute("table", "class", "year");
+		List<HtmlElement> table_yearElements = page.getBody().getElementsByAttribute(Constant.TABLE, Constant.CLASS, Constant.YEAR);
+		List<HtmlElement> th_yearElements = null;
 		for (HtmlElement table_yearElement : table_yearElements) {
-			List<HtmlElement> th_yearElements = table_yearElement.getElementsByAttribute("th", "colspan", "3");
+			th_yearElements = table_yearElement.getElementsByAttribute(Constant.TH, Constant.COLSPAN, "3");
 			sourceYear = th_yearElements.get(0).asText();
 			if(sourceYear != null && sourceYear.contains(year)) {
 				return table_yearElement;
@@ -72,6 +73,20 @@ public class Parser {
 			throw new CrawlException(e);
 		}
 		return page;
+	}
+	
+	/**
+	 * Return email sent date
+	 * @param emailResponse
+	 * @return
+	 */
+	public String parseEmailSentDate(HtmlPage emailResponse) {
+		HtmlElement table_msgviewElement = emailResponse.getHtmlElementById("msgview");
+		List<HtmlElement> tr_dateElements = table_msgviewElement.getElementsByAttribute(Constant.TR, Constant.CLASS, Constant.DATE);
+		HtmlElement tr_dateElement = tr_dateElements.get(0);
+		String emailSentDate = tr_dateElement.getLastChild().asText();
+		logger.debug("emailSentDate : " + emailSentDate);
+		return emailSentDate;
 	}
 	
 }
