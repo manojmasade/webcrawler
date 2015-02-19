@@ -14,6 +14,7 @@
     <jdk.version>1.7.0_72</jdk.version>
     <htmlunit.version>2.15</htmlunit.version>
     <junit.version>3.8.1</junit.version>
+    <slf4j.version>1.7.10</slf4j.version>
   </properties>
 
   <dependencies>
@@ -30,6 +31,18 @@
 	  <artifactId>htmlunit</artifactId>
 	  <version>${htmlunit.version}</version>
 	</dependency>
+	
+	<dependency>
+		<groupId>org.slf4j</groupId>
+		<artifactId>slf4j-api</artifactId>
+		<version>${slf4j.version}</version>
+	</dependency>
+	
+	<dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>1.7.5</version>
+    </dependency>
 
   </dependencies>
   

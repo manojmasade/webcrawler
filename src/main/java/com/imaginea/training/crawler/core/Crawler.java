@@ -56,74 +56,73 @@ public class Crawler {
 		}
 	}
 
+	/**
+	 * 
+	 * @throws CrawlException
+	 */
 	private void processPage() throws CrawlException {
-		parser.parse();
+		logger.debug("processPage begin");
 		
 		try {
 			final WebClient webClient = new WebClient();
-			final HtmlPage page = webClient.getPage(Constant.URL_MAVEN_USERS);
-			
-			// Get all years table elements
-			List<HtmlElement> table_yearElements = page.getBody().getElementsByAttribute("table", "class", "year");
+			final HtmlPage page = parser.getPage(webClient);
+			List<HtmlElement> table_yearElements = parser.parseTableForYears(page, "2014");
 			
 			for (HtmlElement table_yearElement : table_yearElements) {
 				List<HtmlElement> th_yearElements = table_yearElement.getElementsByAttribute("th", "colspan", "3");
 				String year = th_yearElements.get(0).asText();
 				
-				if(year != null && year.equalsIgnoreCase("Year 2014")) {
-					DomNodeList<HtmlElement> tbody_yearElements = table_yearElement.getElementsByTagName("tbody");
-					HtmlElement tbody_yearElement = tbody_yearElements.get(0);
-					
-					DomNodeList<HtmlElement> tr_monthNodes = tbody_yearElement.getElementsByTagName("tr");
-					for (HtmlElement tr_monthNode : tr_monthNodes) {
+				DomNodeList<HtmlElement> tbody_yearElements = table_yearElement.getElementsByTagName("tbody");
+				HtmlElement tbody_yearElement = tbody_yearElements.get(0);
+				
+				DomNodeList<HtmlElement> tr_monthNodes = tbody_yearElement.getElementsByTagName("tr");
+				for (HtmlElement tr_monthNode : tr_monthNodes) {
 
-						// Month, MsgCount
+					// Log information
+					if(logger.isInfoEnabled()){
 						List<HtmlElement> td_monthDateElement = tr_monthNode.getElementsByAttribute("td", "class", "date");
 						String month = td_monthDateElement.get(0).asText();
 						List<HtmlElement> td_monthMsgcountElement = tr_monthNode.getElementsByAttribute("td", "class", "msgcount");
 						String msgCount = td_monthMsgcountElement.get(0).asText();
-						logger.info(year + ", " + month + ", " + msgCount);
-						
-						// href links for msgs by thread (subject)
-						DomNodeList<HtmlElement> anchor_monthNodes = tr_monthNode.getElementsByTagName("a");
-						for (HtmlElement anchor_monthNode : anchor_monthNodes) {
-							if(anchor_monthNode.getAttribute("href").contains("mbox/thread") && anchor_monthNode.getAttribute("href").contains("2014")) {
+						logger.info("Year: " + year + ", Month: " + month + ", MsgCount: " + msgCount);
+					}
+					
+					// href links for msgs by thread (subject)
+					DomNodeList<HtmlElement> anchor_monthNodes = tr_monthNode.getElementsByTagName("a");
+					for (HtmlElement anchor_monthNode : anchor_monthNodes) {
+						if(anchor_monthNode.getAttribute("href").contains("mbox/thread") && anchor_monthNode.getAttribute("href").contains("2014")) {
+							
+							long startTime = System.currentTimeMillis();
+							currentMsgCount = 0;
+							HtmlElement msglistElement = extractMessagesContentInPage(anchor_monthNode); 
+							boolean isNextPageAvailable = true;
+							
+							while (isNextPageAvailable) {
+								List<HtmlElement> th_pagesElements = msglistElement.getElementsByAttribute("th", "class", "pages");
+								HtmlElement th_pageElement = th_pagesElements.get(0);
+								HtmlElement anchor_nextNode = (HtmlElement)th_pageElement.getLastElementChild();
 								
-								long startTime = System.currentTimeMillis();
-								currentMsgCount = 0;
-								HtmlElement msglistElement = extractContent(anchor_monthNode); 
-								boolean isNextPageAvailable = true;
-								
-								while (isNextPageAvailable) {
-									List<HtmlElement> th_pagesElements = msglistElement.getElementsByAttribute("th", "class", "pages");
-									HtmlElement th_pageElement = th_pagesElements.get(0);
-									HtmlElement anchor_nextNode = (HtmlElement)th_pageElement.getLastElementChild();
-									
-									if(anchor_nextNode.getNodeName().equals("a") && anchor_nextNode.asText().contains("Next")) {
-										msglistElement = extractContent(anchor_nextNode);
-									} else {
-										isNextPageAvailable = false;	
-									}
-								} 
+								if(anchor_nextNode.getNodeName().equals("a") && anchor_nextNode.asText().contains("Next")) {
+									msglistElement = extractMessagesContentInPage(anchor_nextNode);
+								} else {
+									isNextPageAvailable = false;	
+								}
+							} 
+
+							// Log information
+							if(logger.isInfoEnabled()) {
 								logger.info("Message Count: " + currentMsgCount);
 								long endTime = System.currentTimeMillis();
 								logger.info("Duration- Seconds : " + (endTime-startTime)/1000 + ", Minutes: " + (endTime-startTime)/(1000*60)); 
 								logger.info("-----");
 							}
+							
 						}
 					}
-				} 
+				}
 			}
-			
 			webClient.closeAllWindows();
-			
 		} catch (FailingHttpStatusCodeException e) {
-			logger.error(e.getMessage());
-			throw new CrawlException(e);
-		} catch (MalformedURLException e) {
-			logger.error(e.getMessage());
-			throw new CrawlException(e);
-		} catch (IOException e) {
 			logger.error(e.getMessage());
 			throw new CrawlException(e);
 		} catch (CrawlException e) { 
@@ -134,8 +133,13 @@ public class Crawler {
 		}
 	}
 	
-	
-	private HtmlElement extractContent(HtmlElement anchor_monthNode) throws CrawlException {
+	/**
+	 * 
+	 * @param anchor_monthNode
+	 * @return
+	 * @throws CrawlException
+	 */
+	private HtmlElement extractMessagesContentInPage(HtmlElement anchor_monthNode) throws CrawlException {
 		try {
 			HtmlPage monthResponse = anchor_monthNode.click();
 			HtmlElement msglistElement = monthResponse.getHtmlElementById("msglist");
@@ -153,7 +157,7 @@ public class Crawler {
 							currentMsgCount += 1;
 							
 							// Read emails
-							readEmail(anchor_msgNodes);
+							extractMessageContent(anchor_msgNodes);
 						}
 					}
 				}
@@ -174,15 +178,13 @@ public class Crawler {
 		
 	}
 	
-	
 	/**
 	 * Read emails
 	 * @param tdElements
 	 * @throws IOException
 	 */
-	private void readEmail(DomNodeList<HtmlElement> emailAnchorNodes) throws CrawlException {
+	private void extractMessageContent(DomNodeList<HtmlElement> emailAnchorNodes) throws CrawlException {
 		try {
-			
 			String emailAddress = null;
 			String emailContent = null;
 			HtmlAnchor anchor = null; 
@@ -198,12 +200,12 @@ public class Crawler {
 				emailContent = emailResponse.asXml();
 				
 				// Get email sent date
-				emailSentDate = fetchEmailSentDate(emailResponse);
+				emailSentDate = parseEmailSentDate(emailResponse);
 				
 				// Write email content to a file: <emailAddress>_<emailSentDate>
 				fileNameBuffer = new StringBuffer();
 				fileName = fileNameBuffer.append(emailAddress).append(Constant.UNDERSCORE).append(emailSentDate).toString();
-				//writeEmail(fileName, emailContent);
+				//writeEmailToDisk(fileName, emailContent);
 
 				logger.debug("Email content: " + emailContent);
 				logger.debug("-------------------------------------------------------");
@@ -222,7 +224,7 @@ public class Crawler {
 	 * @param fileName
 	 * @param emailContent
 	 */
-	private void writeEmail(String fileName, String emailContent) throws CrawlException {
+	private void writeEmailToDisk(String fileName, String emailContent) throws CrawlException {
 		 File file = null;
 		 FileOutputStream fop = null;
 		
@@ -270,7 +272,7 @@ public class Crawler {
 	 * @param emailResponse
 	 * @return
 	 */
-	private String fetchEmailSentDate(HtmlPage emailResponse) {
+	private String parseEmailSentDate(HtmlPage emailResponse) {
 		HtmlElement table_msgviewElement = emailResponse.getHtmlElementById("msgview");
 		List<HtmlElement> tr_dateElements = table_msgviewElement.getElementsByAttribute("tr", "class", "date");
 		HtmlElement tr_dateElement = tr_dateElements.get(0);

@@ -14,4 +14,6 @@ public class Constant {
 	public static final String COLON = ":";
 	
 	public static final String HYPHEN = "-";
+
+	public static final String COMMA = ",";
 }
