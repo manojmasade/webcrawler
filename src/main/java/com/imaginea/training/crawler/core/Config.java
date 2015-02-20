@@ -12,6 +12,8 @@ public class Config {
 	private static final Logger logger = LoggerFactory.getLogger(Config.class);
 	
 	public static final String DIR_DOWNLOAD_EMAILS = "tmp";
+	
+	public static final String FILE_EXTENSION = ".html";
 
 	/**
 	 * The folder will be used by crawler for storing the snapshot of crawl data. 

@@ -41,7 +41,7 @@ public class FileUtil {
 			 
 			 	// File : replace invalid chars from file name
 			    fileName = fileName.replace(Constant.COLON, Constant.HYPHEN);
-			 	file = new File(fileDir, fileName);
+			 	file = new File(fileDir, fileName + Config.FILE_EXTENSION);
 			 	logger.debug("Absolute path:" + file.getAbsolutePath());
 			 	
 			 	if(!file.exists()) {
