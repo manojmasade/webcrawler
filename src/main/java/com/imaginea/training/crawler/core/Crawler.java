@@ -96,7 +96,7 @@ public class Crawler {
 							// Get the list of emails from 1st page
 							long startTime = System.currentTimeMillis();
 							currentMsgCount = 0;
-							HtmlElement msglistElement = extractListOfEmailsFromPage(anchor_monthNode); 
+							HtmlElement msglistElement = extractListOfEmailsFromPage(anchor_monthNode, year, month); 
 							boolean isNextPageAvailable = true;
 							
 							// Get the list of emails from all pages
@@ -106,7 +106,7 @@ public class Crawler {
 								HtmlElement anchor_nextNode = (HtmlElement)th_pageElement.getLastElementChild();
 								
 								if(anchor_nextNode.getNodeName().equals(Constant.TAG_A) && anchor_nextNode.asText().contains(Constant.NEXT)) {
-									msglistElement = extractListOfEmailsFromPage(anchor_nextNode);
+									msglistElement = extractListOfEmailsFromPage(anchor_nextNode, year, month);
 								} else {
 									isNextPageAvailable = false;	
 								}
@@ -142,7 +142,7 @@ public class Crawler {
 	 * @return
 	 * @throws CrawlException
 	 */
-	private HtmlElement extractListOfEmailsFromPage(HtmlElement anchor_monthNode) throws CrawlException {
+	private HtmlElement extractListOfEmailsFromPage(HtmlElement anchor_monthNode, String year, String month) throws CrawlException {
 		try {
 			HtmlPage monthResponse = anchor_monthNode.click();
 			HtmlElement msglistElement = monthResponse.getHtmlElementById("msglist");
@@ -160,7 +160,7 @@ public class Crawler {
 							currentMsgCount += 1;
 							
 							// Read emails
-							extractEmailContent(anchor_msgNodes);
+							extractEmailContent(anchor_msgNodes, year, month);
 						}
 					}
 				}
@@ -183,7 +183,7 @@ public class Crawler {
 	 * @param tdElements
 	 * @throws IOException
 	 */
-	private void extractEmailContent(DomNodeList<HtmlElement> emailAnchorNodes) throws CrawlException {
+	private void extractEmailContent(DomNodeList<HtmlElement> emailAnchorNodes, String year, String month) throws CrawlException {
 		try {
 			String emailAddress = null;
 			String emailContent = null;
@@ -205,7 +205,7 @@ public class Crawler {
 				// Write email content to a file: <emailAddress>_<emailSentDate>
 				fileNameBuffer = new StringBuffer();
 				fileName = fileNameBuffer.append(emailAddress).append(Constant.UNDERSCORE).append(emailSentDate).toString();
-				FileUtil.storageEmail(fileName, emailContent);
+				FileUtil.storageEmail(fileName, emailContent, year, month);
 
 				logger.debug("Email content: " + emailContent);
 				logger.debug("------------------------------");

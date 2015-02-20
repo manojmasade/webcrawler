@@ -61,7 +61,7 @@ public class Parser {
 			if(sourceYear != null && sourceYear.contains(year)) {
 				return table_yearElement;
 			} else {
-				logger.error("parseTableForYear - year {} not found", year); 
+				logger.info("parseTableForYear - year: {} not matched with source: {}", year, sourceYear); 
 			}
 		}
 		return null;

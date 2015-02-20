@@ -18,13 +18,23 @@ public class FileUtil {
 	 * Create a directory if does not exist
 	 * @return
 	 */
-	public static File createDirectory() {
-		File fileDir = new File(Config.DIR_DOWNLOAD_EMAILS);
-	    if (!fileDir.exists()) {
-	    	fileDir.mkdir();
+	public static File createDirectory(String year, String month) {
+		File tempDir = new File(Config.DIR_DOWNLOAD_EMAILS);
+	    if (!tempDir.exists()) {
+	    	tempDir.mkdir();
 	    	logger.debug("{} directory created", Config.DIR_DOWNLOAD_EMAILS);
 	    }
-	    return fileDir;
+		File fileDir = new File(tempDir, year);
+	    if (!fileDir.exists()) {
+	    	fileDir.mkdir();
+	    	logger.debug("{} directory created", year);
+	    }
+	    File subDir = new File(fileDir, month);
+	    if (!subDir.exists()) {
+	    	subDir.mkdir();
+	    	logger.debug("{} directory created", month);
+	    }
+	    return subDir;
 	}
 	
 	/**
@@ -32,13 +42,13 @@ public class FileUtil {
 	 * @param fileName
 	 * @param emailContent
 	 */
-	public static void storageEmail(String fileName, String emailContent) throws CrawlException {
+	public static void storageEmail(String fileName, String emailContent, String year, String month) throws CrawlException {
 		 File file = null;
 		 FileOutputStream fop = null;
 		
 		 try {
 			 	// Create directory
-			 	File fileDir = createDirectory();
+			 	File fileDir = createDirectory(year, month);
 			 
 			 	// File : replace invalid chars from file name
 			    fileName = fileName.replace(Constant.COLON, Constant.HYPHEN);
