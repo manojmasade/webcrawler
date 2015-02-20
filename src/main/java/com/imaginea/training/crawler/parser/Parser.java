@@ -69,7 +69,7 @@ public class Parser {
 		try {
 			page = webClient.getPage(Constant.URL_MAVEN_USERS);
 		} catch (FailingHttpStatusCodeException | IOException e) {
-			logger.error(e.getMessage());
+			logger.error("Parser - getting page from maven users failed", e);
 			throw new CrawlException(e);
 		}
 		return page;

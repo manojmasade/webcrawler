@@ -53,10 +53,10 @@ public class FileUtil {
 					fop.flush();
 					fop.close();
 			 	} else {
-			 		logger.info("File alreaddy exists");
+			 		logger.info("File already exists");
 			 	}  
 		 } catch (IOException e) {
-			 logger.error(e.getMessage());
+			 logger.error("FileUtil - creating a file failed", e);
 			 throw new CrawlException(e);
 		 } finally {
 			try {
@@ -64,7 +64,7 @@ public class FileUtil {
 					fop.close();
 				}
 			} catch (IOException e) {
-				logger.error(e.getMessage());
+				logger.error("FileUtil - closing file output stream failed", e);
 				throw new CrawlException(e);
 			}
 		 }

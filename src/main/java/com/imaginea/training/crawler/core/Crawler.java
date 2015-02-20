@@ -50,7 +50,7 @@ public class Crawler {
 		try {
 			processPage();
 		} catch (CrawlException e) {
-			logger.error("run failed - " + e.getMessage());
+			logger.error("Crawler - run failed", e);
 		}
 	}
 
@@ -126,12 +126,12 @@ public class Crawler {
 			webClient.closeAllWindows();
 			logger.debug("processPage end");
 		} catch (FailingHttpStatusCodeException e) {
-			logger.error(e.getMessage());
+			logger.error("Crawler - Http status code exception", e);
 			throw new CrawlException(e);
 		} catch (CrawlException e) { 
 			throw e;
 		} catch (Exception e) {
-			logger.error("processPage failed - " + e.getMessage());
+			logger.error("Crawler - processPage failed", e);
 			throw new CrawlException(e);
 		}
 	}
@@ -167,12 +167,12 @@ public class Crawler {
 			}
 			return msglistElement;
 		} catch (ElementNotFoundException | IOException e) {
-			logger.error(e.getMessage()); 
+			logger.error("Crawler - extract list of emails failed", e); 
 			throw new CrawlException(e);
 		} catch (CrawlException e) { 
 			throw e;
 		} catch (Exception e) {
-			logger.error(e.getMessage());
+			logger.error("Crawler - extract list of emails failed", e);
 			throw new CrawlException(e);
 		}
 		
@@ -213,7 +213,7 @@ public class Crawler {
 		} catch (CrawlException e) { 
 			throw e;
 		} catch (Exception e) {
-			logger.error(e.getMessage());
+			logger.error("Crawler - extract email content failed", e);
 			throw new CrawlException(e);
 		}
 	}
