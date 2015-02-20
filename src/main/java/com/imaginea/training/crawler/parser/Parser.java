@@ -28,12 +28,19 @@ public class Parser {
 	 * @param yearsCSV
 	 * @return
 	 */
-	public List<HtmlElement> parseTableForYears(HtmlPage page, String yearsCSV){
-		List<HtmlElement> yearElements = new ArrayList<HtmlElement>();
-		String yearArr[] = yearsCSV.split(Constant.COMMA);
-		for (int i = 0; i < yearArr.length; i++) {
-			yearElements.add(parseTableForYear(page, yearArr[i]));
+	public List<HtmlElement> parseTableForYears(HtmlPage page, String yearsCSV) throws CrawlException {
+		List<HtmlElement> yearElements = null;
+		if(yearsCSV != null) {
+			yearElements = new ArrayList<HtmlElement>();
+			String yearArr[] = yearsCSV.split(Constant.COMMA);
+			for (int i = 0; i < yearArr.length; i++) {
+				yearElements.add(parseTableForYear(page, yearArr[i]));
+			}	
+		} else {
+			logger.error("parseTableForYears failed - years cannot be null");
+			throw new CrawlException("years cannot be null");
 		}
+		
 		return yearElements;			
 	}
 	
@@ -53,6 +60,8 @@ public class Parser {
 			sourceYear = th_yearElements.get(0).asText();
 			if(sourceYear != null && sourceYear.contains(year)) {
 				return table_yearElement;
+			} else {
+				logger.error("parseTableForYear - year {} not found", year); 
 			}
 		}
 		return null;
@@ -69,7 +78,7 @@ public class Parser {
 		try {
 			page = webClient.getPage(Constant.URL_MAVEN_USERS);
 		} catch (FailingHttpStatusCodeException | IOException e) {
-			logger.error("Parser - getting page from maven users failed", e);
+			logger.error("Parser - getting page for url {} failed : {}", Constant.URL_MAVEN_USERS, e);
 			throw new CrawlException(e);
 		}
 		return page;

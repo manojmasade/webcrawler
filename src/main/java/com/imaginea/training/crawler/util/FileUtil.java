@@ -22,6 +22,7 @@ public class FileUtil {
 		File fileDir = new File(Config.DIR_DOWNLOAD_EMAILS);
 	    if (!fileDir.exists()) {
 	    	fileDir.mkdir();
+	    	logger.debug("{} directory created", Config.DIR_DOWNLOAD_EMAILS);
 	    }
 	    return fileDir;
 	}
@@ -53,7 +54,7 @@ public class FileUtil {
 					fop.flush();
 					fop.close();
 			 	} else {
-			 		logger.info("File already exists");
+			 		logger.info("File {} already exists", file.getPath());
 			 	}  
 		 } catch (IOException e) {
 			 logger.error("FileUtil - creating a file failed", e);
