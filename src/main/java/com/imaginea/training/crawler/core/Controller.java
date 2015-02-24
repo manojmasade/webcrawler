@@ -3,6 +3,8 @@ package com.imaginea.training.crawler.core;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.imaginea.training.crawler.util.FileUtil;
+
 /**
  * 
  * @author manojm
@@ -21,9 +23,16 @@ public class Controller {
 	 */
 	protected boolean shuttingDown;
 	
+	private FileUtil fileUtil = null;
+	
 	public Controller() {
 		finished = false;
 		shuttingDown = false;
+		fileUtil = new FileUtil();
+	}
+
+	public FileUtil getFileUtil() {
+		return fileUtil;
 	}
 	
 }

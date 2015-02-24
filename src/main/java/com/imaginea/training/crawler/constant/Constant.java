@@ -51,4 +51,6 @@ public class Constant {
 	
 	public static final String MSGVIEW = "msgview";
 	
+	public static final String MSGCOUNT = "msgcount";
+	
 }

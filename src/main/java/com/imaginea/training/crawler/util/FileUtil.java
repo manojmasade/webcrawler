@@ -11,14 +11,15 @@ import com.imaginea.training.crawler.constant.Constant;
 import com.imaginea.training.crawler.core.Config;
 import com.imaginea.training.crawler.exception.CrawlException;
 
-public class FileUtil {
+public class FileUtil implements IFileUtil {
+	
 	private static final Logger logger = LoggerFactory.getLogger(FileUtil.class);
 	
 	/**
 	 * Create a directory if does not exist
 	 * @return
 	 */
-	public static File createDirectory(String year, String month) {
+	private File createDirectory(String year, String month) {
 		File tempDir = new File(Config.DIR_DOWNLOAD_EMAILS);
 	    if (!tempDir.exists()) {
 	    	tempDir.mkdir();
@@ -29,12 +30,12 @@ public class FileUtil {
 	    	fileDir.mkdir();
 	    	logger.debug("{} directory created", year);
 	    }
-	    File subDir = new File(fileDir, month);
-	    if (!subDir.exists()) {
-	    	subDir.mkdir();
+	    File result = new File(fileDir, month);
+	    if (!result.exists()) {
+	    	result.mkdir();
 	    	logger.debug("{} directory created", month);
 	    }
-	    return subDir;
+	    return result;
 	}
 	
 	/**
@@ -42,7 +43,8 @@ public class FileUtil {
 	 * @param fileName
 	 * @param emailContent
 	 */
-	public static void storageEmail(String fileName, String emailContent, String year, String month) throws CrawlException {
+	@Override
+	public void downloadEmail(String fileName, String emailContent, String year, String month) throws CrawlException {
 		 File file = null;
 		 FileOutputStream fop = null;
 		

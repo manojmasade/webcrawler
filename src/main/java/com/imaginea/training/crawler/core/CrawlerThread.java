@@ -20,7 +20,6 @@ import com.gargoylesoftware.htmlunit.html.HtmlTableRow;
 import com.imaginea.training.crawler.constant.Constant;
 import com.imaginea.training.crawler.exception.CrawlException;
 import com.imaginea.training.crawler.parser.Parser;
-import com.imaginea.training.crawler.util.FileUtil;
 
 public class CrawlerThread implements Runnable {
 	private static final Logger logger = LoggerFactory.getLogger(CrawlerThread.class);
@@ -78,10 +77,10 @@ public class CrawlerThread implements Runnable {
 		List<HtmlTableBody> tbody_yearlist = table_yearList.getBodies();
 		this.tbody_year = tbody_yearlist.get(0);
 		
-		for (final HtmlTableRow row : this.tbody_year.getRows()) {
-			List<HtmlElement> td_monthDateElement = row.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
+		for (final HtmlTableRow result : this.tbody_year.getRows()) {
+			List<HtmlElement> td_monthDateElement = result.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
 			if(td_monthDateElement.get(0).asText().contains(month)) {
-				return row;	
+				return result;	
 			}
 		}
 		return null;
@@ -146,8 +145,8 @@ public class CrawlerThread implements Runnable {
 		try {
 			HtmlAnchor anchor = (HtmlAnchor) anchor_monthNode;
 			HtmlPage monthResponse = anchor.click();
-			HtmlElement msglistElement = monthResponse.getHtmlElementById(Constant.MSGLIST);
-			HtmlTable table_msgList = (HtmlTable) msglistElement;
+			HtmlElement result = monthResponse.getHtmlElementById(Constant.MSGLIST);
+			HtmlTable table_msgList = (HtmlTable) result;
 			List<HtmlTableBody> tbody_msgslist = table_msgList.getBodies();
 			HtmlTableBody tbody_msg = tbody_msgslist.get(0);
 			
@@ -164,7 +163,7 @@ public class CrawlerThread implements Runnable {
 					}
 				}
 			}
-			return msglistElement;
+			return result;
 		} catch (ElementNotFoundException | IOException e) {
 			logger.error("extract list of emails from page failed", e); 
 			throw new CrawlException(e);
@@ -202,7 +201,7 @@ public class CrawlerThread implements Runnable {
 				// Write email content to a file: <emailAddress>_<emailSentDate>
 				fileNameBuffer = new StringBuffer();
 				fileName = fileNameBuffer.append(emailAddress).append(Constant.UNDERSCORE).append(emailSentDate).toString();
-				FileUtil.storageEmail(fileName, emailContent, year, month);
+				getController().getFileUtil().downloadEmail(fileName, emailContent, year, month);
 				logger.debug("Email content: " + emailContent);
 			}	
 		} catch (CrawlException e) { 

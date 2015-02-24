@@ -14,6 +14,7 @@ import com.gargoylesoftware.htmlunit.html.HtmlTableBody;
 import com.gargoylesoftware.htmlunit.html.HtmlTableRow;
 import com.imaginea.training.crawler.constant.Constant;
 import com.imaginea.training.crawler.exception.CrawlException;
+import com.imaginea.training.crawler.parser.HtmlPageParser;
 import com.imaginea.training.crawler.parser.Parser;
 
 /**
@@ -43,7 +44,7 @@ public class Crawler implements Runnable {
 	}
 	
 	private void init() {
-		this.parser = new Parser();
+		this.parser = new HtmlPageParser();
 		this.controller = new Controller();
 	}
 
@@ -81,7 +82,7 @@ public class Crawler implements Runnable {
 					List<HtmlElement> td_monthDateElement = tr_monthNode.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
 					month = td_monthDateElement.get(0).asText();
 					month = month.substring(0, month.indexOf(Constant.SPACE));
-					List<HtmlElement> td_monthMsgcountElement = tr_monthNode.getElementsByAttribute(Constant.TD, Constant.CLASS, "msgcount");
+					List<HtmlElement> td_monthMsgcountElement = tr_monthNode.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.MSGCOUNT);
 					msgCount = td_monthMsgcountElement.get(0).asText();
 					logger.info("year:" + year + " month:" + month + " emails: " + msgCount);
 				}
