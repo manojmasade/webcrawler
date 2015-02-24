@@ -1,5 +1,7 @@
 package com.imaginea.training.crawler;
 
+import java.util.Date;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,10 +17,19 @@ public class App {
     public static void main( String[] args ) {
     	logger.info("Java Crawler -- Download emails for year 2014" );
     	long processStartTime = System.currentTimeMillis();
-		
-        Crawler crawler = new Crawler();
-        crawler.init();
-        crawler.start();
+    	System.out.println("BEGIN DATE:" + new Date());
+    	
+    	String years[] = {
+    			"2014"
+    	};
+
+    	for (int i = 0; i < years.length; i++) {
+    		// Threads - parent/year
+        	Crawler crawler = new Crawler(years[i]);
+        	crawler.setName(years[i]);
+        	Thread parent = new Thread(crawler);
+        	parent.start();	
+		}
         
         long processEndTime = System.currentTimeMillis();
 		long processDiffTime = processEndTime-processStartTime;
