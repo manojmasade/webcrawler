@@ -1,2 +1,2 @@
-# webcrawler
-To crawl and download all mails for year 2014 from specified url
+# AJAX Webcrawler
+To crawl and download all mails for specified years from Apache maven users url
