@@ -29,6 +29,7 @@ public class Parser {
 	 * @return
 	 */
 	public List<HtmlElement> parseTableForYears(HtmlPage page, String yearsCSV) throws CrawlException {
+		logger.debug("parseTableForYears yearsCSV:" + yearsCSV);
 		List<HtmlElement> yearElements = null;
 		if(yearsCSV != null) {
 			yearElements = new ArrayList<HtmlElement>();
@@ -38,9 +39,8 @@ public class Parser {
 			}	
 		} else {
 			logger.error("parseTableForYears failed - years cannot be null");
-			throw new CrawlException("years cannot be null");
+			throw new CrawlException("yearsCSV cannot be null");
 		}
-		
 		return yearElements;			
 	}
 	
@@ -52,16 +52,16 @@ public class Parser {
 	 */
 	public HtmlElement parseTableForYear(HtmlPage page, String year){
 		// Get all years table elements
-		String sourceYear = null;
+		String contentYear = null;
 		List<HtmlElement> table_yearElements = page.getBody().getElementsByAttribute(Constant.TABLE, Constant.CLASS, Constant.YEAR);
 		List<HtmlElement> th_yearElements = null;
 		for (HtmlElement table_yearElement : table_yearElements) {
 			th_yearElements = table_yearElement.getElementsByAttribute(Constant.TH, Constant.COLSPAN, "3");
-			sourceYear = th_yearElements.get(0).asText();
-			if(sourceYear != null && sourceYear.contains(year)) {
+			contentYear = th_yearElements.get(0).asText();
+			if(contentYear != null && contentYear.contains(year)) {
 				return table_yearElement;
 			} else {
-				logger.info("parseTableForYear - year: {} not matched with source: {}", year, sourceYear); 
+				logger.info("parseTableForYear - year: {} not matched with content: {}", year, contentYear); 
 			}
 		}
 		return null;
@@ -78,7 +78,7 @@ public class Parser {
 		try {
 			page = webClient.getPage(Constant.URL_MAVEN_USERS);
 		} catch (FailingHttpStatusCodeException | IOException e) {
-			logger.error("Parser - getting page for url {} failed : {}", Constant.URL_MAVEN_USERS, e);
+			logger.error("getting page for url {} failed : {}", Constant.URL_MAVEN_USERS, e);
 			throw new CrawlException(e);
 		}
 		return page;
@@ -90,11 +90,11 @@ public class Parser {
 	 * @return
 	 */
 	public String parseEmailSentDate(HtmlPage emailResponse) {
-		HtmlElement table_msgviewElement = emailResponse.getHtmlElementById("msgview");
+		HtmlElement table_msgviewElement = emailResponse.getHtmlElementById(Constant.MSGVIEW);
 		List<HtmlElement> tr_dateElements = table_msgviewElement.getElementsByAttribute(Constant.TR, Constant.CLASS, Constant.DATE);
 		HtmlElement tr_dateElement = tr_dateElements.get(0);
 		String emailSentDate = tr_dateElement.getLastChild().asText();
-		logger.debug("emailSentDate : " + emailSentDate);
+		logger.debug("email sent date : " + emailSentDate);
 		return emailSentDate;
 	}
 	

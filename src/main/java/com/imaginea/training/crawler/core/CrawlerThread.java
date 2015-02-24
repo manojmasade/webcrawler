@@ -40,20 +40,39 @@ public class CrawlerThread implements Runnable {
 	
 	private String month;
 	
-	private HtmlTableRow tr_monthNode;
-	
 	private Controller controller;
 	
 	private Parser parser;
 
-	public CrawlerThread(HtmlTableRow tr_monthNode, Parser parser, Controller controller, String month, String year) {
+	public CrawlerThread(Parser parser, Controller controller, String month, String year) {
+		logger.debug("year:" + year + ",month:" + month);
 		//this.tr_monthNode = tr_monthNode;
 		this.parser = parser;
 		this.controller = controller;
 		this.month = month;
 		this.year = year;
+
+		
+	}
+	
+	private void init() {
+		/*this.parser = new Parser();
+		this.controller = new Controller();*/
 		this.webClient = new WebClient();
 		this.page = parser.getPage(webClient);
+	}
+	
+	@Override
+	public void run() {
+		init();
+		processPage();	
+	}
+	
+	/**
+	 * Get table row <tr></tr> for the month
+	 * @return
+	 */
+	private HtmlTableRow getTableRowForMonth() {
 		this.table_yearElement = parser.parseTableForYear(page, year);
 		HtmlTable table_yearList = (HtmlTable) table_yearElement;
 		List<HtmlTableBody> tbody_yearlist = table_yearList.getBodies();
@@ -61,43 +80,30 @@ public class CrawlerThread implements Runnable {
 		
 		for (final HtmlTableRow row : this.tbody_year.getRows()) {
 			List<HtmlElement> td_monthDateElement = row.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
-			if(td_monthDateElement.get(0).asText().equals(month)) {
-				//logger.info("SOURCE:" + td_monthDateElement.get(0).asText() + ", TARGET:" + month);
-				this.tr_monthNode = row;	
+			if(td_monthDateElement.get(0).asText().contains(month)) {
+				return row;	
 			}
 		}
-		
+		return null;
 	}
 	
-	private void init() {
-		//this.parser = new Parser();
-		//this.controller = new Controller();
-	}
-	
-	@Override
-	public void run() {
-		//init();
-		processPage();	
-	}
-	
-	
+	/**
+	 * Process page for the month
+	 * @throws CrawlException
+	 */
 	public void processPage() throws CrawlException {
 		logger.debug("processPage begin");
 		
-		//synchronized(this) {
 		try {
-			// href links for msgs by thread (subject)
-			DomNodeList<HtmlElement> anchor_monthNodes = this.getTR_monthNode().getElementsByTagName(Constant.TAG_A);
+			HtmlTableRow tr_monthNode = getTableRowForMonth();
+			DomNodeList<HtmlElement> anchor_monthNodes = tr_monthNode.getElementsByTagName(Constant.TAG_A);
 			for (HtmlElement anchor_monthNode : anchor_monthNodes) {
-				if(anchor_monthNode.getAttribute("href").contains("mbox/thread") && anchor_monthNode.getAttribute(Constant.HREF).contains(Constant.YEAR_2014)) {
+				if(anchor_monthNode.getAttribute(Constant.HREF).contains("mbox/thread") && anchor_monthNode.getAttribute(Constant.HREF).contains(year)) {
 					
 					// Get the list of emails from 1st page
 					long startTime = System.currentTimeMillis();
 					currentMsgCount = 0;
-					HtmlElement msglistElement = null;
-					//synchronized (this) {
-						msglistElement = extractListOfEmailsFromPage(anchor_monthNode, year, month);	
-					//}
+					HtmlElement msglistElement = extractListOfEmailsFromPage(anchor_monthNode, year, month);	
 					boolean isNextPageAvailable = true;
 					
 					// Get the list of emails from all pages
@@ -106,10 +112,8 @@ public class CrawlerThread implements Runnable {
 						HtmlElement th_pageElement = th_pagesElements.get(0);
 						HtmlElement anchor_nextNode = (HtmlElement)th_pageElement.getLastElementChild();
 						
-						if(anchor_nextNode.getNodeName().equals(Constant.TAG_A) && anchor_nextNode.asText().contains(Constant.NEXT)) {
-							//synchronized (this) {
-								msglistElement = extractListOfEmailsFromPage(anchor_nextNode, year, month);
-							//}
+						if(anchor_nextNode != null && anchor_nextNode.getNodeName().equals(Constant.TAG_A) && anchor_nextNode.asText().contains(Constant.NEXT)) {
+							msglistElement = extractListOfEmailsFromPage(anchor_nextNode, year, month);
 						} else {
 							isNextPageAvailable = false;	
 						}
@@ -117,20 +121,19 @@ public class CrawlerThread implements Runnable {
 
 					// Log information
 					if(logger.isInfoEnabled() || logger.isDebugEnabled()) {
-						logger.info("Message Count: " + currentMsgCount);
+						logger.info("{} {} emails count: {}" , month, year, currentMsgCount);
 						long endTime = System.currentTimeMillis();
-						logger.info("Duration- Seconds : " + (endTime-startTime)/1000 + ", Minutes: " + (endTime-startTime)/(1000*60)); 
-						logger.info("-----");
+						logger.debug("Duration - Seconds : " + (endTime-startTime)/1000 + ", Minutes: " + (endTime-startTime)/(1000*60)); 
+						logger.debug("--------");
 					}
 				}
 			}
 		} catch(CrawlException e) {
 			throw e;
 		} catch(Exception e) {
-			logger.error("Crawler - processPage failed", e);
+			logger.error("processPage failed", e);
 			throw new CrawlException(e);
 		}
-		//}
 	}
 	
 	/**
@@ -142,26 +145,20 @@ public class CrawlerThread implements Runnable {
 	public HtmlElement extractListOfEmailsFromPage(HtmlElement anchor_monthNode, String year, String month) throws CrawlException {
 		try {
 			HtmlAnchor anchor = (HtmlAnchor) anchor_monthNode;
-			//logger.info("URL : " + anchor.getHrefAttribute() + "," + anchor.getBaseURI());
-			//page = webClient.getPage(anchor_monthNode.getBaseURI());
 			HtmlPage monthResponse = anchor.click();
-			HtmlElement msglistElement = monthResponse.getHtmlElementById("msglist");
+			HtmlElement msglistElement = monthResponse.getHtmlElementById(Constant.MSGLIST);
 			HtmlTable table_msgList = (HtmlTable) msglistElement;
 			List<HtmlTableBody> tbody_msgslist = table_msgList.getBodies();
-			HtmlTableBody tbody_msgList = tbody_msgslist.get(0);
+			HtmlTableBody tbody_msg = tbody_msgslist.get(0);
 			
-			for (final HtmlTableRow row : tbody_msgList.getRows()) {
-				for (final HtmlTableCell td_msgElement : row.getCells()) {
-					DomAttr attr = td_msgElement.getAttributeNode(Constant.CLASS);
+			for (final HtmlTableRow tr_msg : tbody_msg.getRows()) {
+				for (final HtmlTableCell td_msg : tr_msg.getCells()) {
+					DomAttr td_msg_class = td_msg.getAttributeNode(Constant.CLASS);
 					
-					if(attr.getNodeValue().equals(Constant.SUBJECT)) {
-						DomNodeList<HtmlElement> anchor_msgNodes = td_msgElement.getElementsByTagName(Constant.TAG_A);
+					if(td_msg_class.getNodeValue().equals(Constant.SUBJECT)) {
+						DomNodeList<HtmlElement> anchor_msgNodes = td_msg.getElementsByTagName(Constant.TAG_A);
 						if(anchor_msgNodes.size() > 0) {
-							//synchronized (this) {
-								currentMsgCount += 1;	
-							//}
-							
-							// Read emails
+							currentMsgCount += 1;	
 							extractEmailContent(anchor_msgNodes, year, month);
 						}
 					}
@@ -169,12 +166,12 @@ public class CrawlerThread implements Runnable {
 			}
 			return msglistElement;
 		} catch (ElementNotFoundException | IOException e) {
-			logger.error("Crawler - extract list of emails failed", e); 
+			logger.error("extract list of emails from page failed", e); 
 			throw new CrawlException(e);
 		} catch (CrawlException e) { 
 			throw e;
 		} catch (Exception e) {
-			logger.error("Crawler - extract list of emails failed", e);
+			logger.error("extract list of emails failed", e);
 			throw new CrawlException(e);
 		}
 		
@@ -195,29 +192,23 @@ public class CrawlerThread implements Runnable {
 			String fileName = null;
 			String emailSentDate = null;
 			
-				for (HtmlElement emailAnchor : emailAnchorNodes) {
-					anchor = (HtmlAnchor) emailAnchor;
-					emailAddress = anchor.getHrefAttribute();
-					emailResponse = anchor.click();
-					emailContent = emailResponse.asXml();
-					
-					// Get email sent date
-					//synchronized (this) {
-						emailSentDate = parser.parseEmailSentDate(emailResponse);
-					//}
-					
-					// Write email content to a file: <emailAddress>_<emailSentDate>
-					fileNameBuffer = new StringBuffer();
-					fileName = fileNameBuffer.append(emailAddress).append(Constant.UNDERSCORE).append(emailSentDate).toString();
-					FileUtil.storageEmail(fileName, emailContent, year, month);
-
-					logger.debug("Email content: " + emailContent);
-					logger.debug("------------------------------");
-				}	
+			for (HtmlElement emailAnchor : emailAnchorNodes) {
+				anchor = (HtmlAnchor) emailAnchor;
+				emailAddress = anchor.getHrefAttribute();
+				emailResponse = anchor.click();
+				emailContent = emailResponse.asXml();
+				emailSentDate = parser.parseEmailSentDate(emailResponse);
+				
+				// Write email content to a file: <emailAddress>_<emailSentDate>
+				fileNameBuffer = new StringBuffer();
+				fileName = fileNameBuffer.append(emailAddress).append(Constant.UNDERSCORE).append(emailSentDate).toString();
+				FileUtil.storageEmail(fileName, emailContent, year, month);
+				logger.debug("Email content: " + emailContent);
+			}	
 		} catch (CrawlException e) { 
 			throw e;
 		} catch (Exception e) {
-			logger.error("Crawler - extract email content failed", e);
+			logger.error("extract email content failed", e);
 			throw new CrawlException(e);
 		}
 	}
@@ -253,10 +244,6 @@ public class CrawlerThread implements Runnable {
 	/*public void setMonth(String month) {
 		this.month = month;
 	}*/
-
-	public HtmlTableRow getTR_monthNode() {
-		return tr_monthNode;
-	}
 
 	public Controller getController() {
 		return controller;

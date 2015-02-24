@@ -15,18 +15,14 @@ public class App {
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
 	
     public static void main( String[] args ) {
-    	logger.info("Java Crawler -- Download emails for year 2014" );
+    	logger.info("Java Crawler -- Download emails for specified year" );
     	long processStartTime = System.currentTimeMillis();
     	System.out.println("BEGIN DATE:" + new Date());
     	
-    	String years[] = {
-    			"2014"
-    	};
+    	String years[] = { "2015", "2014" };
 
     	for (int i = 0; i < years.length; i++) {
-    		// Threads - parent/year
         	Crawler crawler = new Crawler(years[i]);
-        	crawler.setName(years[i]);
         	Thread parent = new Thread(crawler);
         	parent.start();	
 		}

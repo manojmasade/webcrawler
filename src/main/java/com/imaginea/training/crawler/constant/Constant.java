@@ -17,6 +17,8 @@ public class Constant {
 
 	public static final String COMMA = ",";
 	
+	public static final String SPACE = " ";
+	
 	public static final String TABLE = "table";
 	
 	public static final String CLASS = "class";
@@ -45,5 +47,8 @@ public class Constant {
 	
 	public static final String NEXT = "Next";
 	
-	public static final String YEAR_2014 = "2014";
+	public static final String MSGLIST = "msglist";
+	
+	public static final String MSGVIEW = "msgview";
+	
 }
