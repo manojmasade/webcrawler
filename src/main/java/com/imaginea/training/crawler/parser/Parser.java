@@ -60,10 +60,9 @@ public class Parser {
 			contentYear = th_yearElements.get(0).asText();
 			if(contentYear != null && contentYear.contains(year)) {
 				return table_yearElement;
-			} else {
-				logger.info("parseTableForYear - year: {} not matched with content: {}", year, contentYear); 
 			}
 		}
+		logger.info("parseTableForYear - content not matched for year: {}", year);
 		return null;
 	}
 	

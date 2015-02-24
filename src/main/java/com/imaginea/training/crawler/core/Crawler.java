@@ -83,7 +83,7 @@ public class Crawler implements Runnable {
 					month = month.substring(0, month.indexOf(Constant.SPACE));
 					List<HtmlElement> td_monthMsgcountElement = tr_monthNode.getElementsByAttribute(Constant.TD, Constant.CLASS, "msgcount");
 					msgCount = td_monthMsgcountElement.get(0).asText();
-					logger.info("year:" + year + ", month:" + month + ", msgCount:" + msgCount);
+					logger.info("year:" + year + " month:" + month + " emails: " + msgCount);
 				}
 				
 				// Child thread for months
