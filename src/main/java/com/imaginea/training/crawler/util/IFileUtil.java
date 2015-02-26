@@ -4,6 +4,8 @@ import com.imaginea.training.crawler.exception.CrawlException;
 
 public interface IFileUtil {
 
-	public void downloadEmail(String fileName, String emailContent, String year, String month) throws CrawlException;
+	public void downloadEmail(String fileName, String content, String year, String month) throws CrawlException;
+	
+	public void createFile(String dir, String fileName, String content) throws CrawlException;
 	
 }

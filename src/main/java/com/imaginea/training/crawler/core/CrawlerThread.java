@@ -1,6 +1,9 @@
 package com.imaginea.training.crawler.core;
 
 import java.io.IOException;
+import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -42,6 +45,8 @@ public class CrawlerThread implements Runnable {
 	private Controller controller;
 	
 	private Parser parser;
+	
+	private int totalMsgCount = 0;
 
 	public CrawlerThread(Parser parser, Controller controller, String month, String year) {
 		logger.debug("year:" + year + ",month:" + month);
@@ -58,13 +63,16 @@ public class CrawlerThread implements Runnable {
 		/*this.parser = new Parser();
 		this.controller = new Controller();*/
 		this.webClient = new WebClient();
+		this.webClient.getOptions().setTimeout(Config.CONNECTION_TIMEOUT);
+		webClient.setJavaScriptTimeout(Config.JAVASCRIPT_TIMEOUT);
 		this.page = parser.getPage(webClient);
 	}
 	
 	@Override
 	public void run() {
 		init();
-		processPage();	
+		processPage();
+		logger.info("CRAWLER THREAD RUN END");
 	}
 	
 	/**
@@ -72,16 +80,19 @@ public class CrawlerThread implements Runnable {
 	 * @return
 	 */
 	private HtmlTableRow getTableRowForMonth() {
-		this.table_yearElement = parser.parseTableForYear(page, year);
-		HtmlTable table_yearList = (HtmlTable) table_yearElement;
-		List<HtmlTableBody> tbody_yearlist = table_yearList.getBodies();
-		this.tbody_year = tbody_yearlist.get(0);
-		
-		for (final HtmlTableRow result : this.tbody_year.getRows()) {
-			List<HtmlElement> td_monthDateElement = result.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
-			if(td_monthDateElement.get(0).asText().contains(month)) {
-				return result;	
-			}
+		if(page != null) {
+			this.table_yearElement = parser.parseTableForYear(page, year);
+			HtmlTable table_yearList = (HtmlTable) table_yearElement;
+			List<HtmlTableBody> tbody_yearlist = table_yearList.getBodies();
+			this.tbody_year = tbody_yearlist.get(0);
+			
+			for (final HtmlTableRow result : this.tbody_year.getRows()) {
+				List<HtmlElement> td_monthDateElement = result.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
+				logger.info("td_monthDateElement: {}", td_monthDateElement);
+				if(td_monthDateElement.get(0).asText().contains(month)) {
+					return result;	
+				}
+			}	
 		}
 		return null;
 	}
@@ -95,35 +106,39 @@ public class CrawlerThread implements Runnable {
 		
 		try {
 			HtmlTableRow tr_monthNode = getTableRowForMonth();
-			DomNodeList<HtmlElement> anchor_monthNodes = tr_monthNode.getElementsByTagName(Constant.TAG_A);
-			for (HtmlElement anchor_monthNode : anchor_monthNodes) {
-				if(anchor_monthNode.getAttribute(Constant.HREF).contains("mbox/thread") && anchor_monthNode.getAttribute(Constant.HREF).contains(year)) {
-					
-					// Get the list of emails from 1st page
-					long startTime = System.currentTimeMillis();
-					currentMsgCount = 0;
-					HtmlElement msglistElement = extractListOfEmailsFromPage(anchor_monthNode, year, month);	
-					boolean isNextPageAvailable = true;
-					
-					// Get the list of emails from all pages
-					while (isNextPageAvailable) {
-						List<HtmlElement> th_pagesElements = msglistElement.getElementsByAttribute(Constant.TH, Constant.CLASS, Constant.PAGES);
-						HtmlElement th_pageElement = th_pagesElements.get(0);
-						HtmlElement anchor_nextNode = (HtmlElement)th_pageElement.getLastElementChild();
+			if(tr_monthNode != null) {
+				DomNodeList<HtmlElement> anchor_monthNodes = tr_monthNode.getElementsByTagName(Constant.TAG_A);
+				for (HtmlElement anchor_monthNode : anchor_monthNodes) {
+					if(anchor_monthNode.getAttribute(Constant.HREF).contains("mbox/thread") && anchor_monthNode.getAttribute(Constant.HREF).contains(year)) {
 						
-						if(anchor_nextNode != null && anchor_nextNode.getNodeName().equals(Constant.TAG_A) && anchor_nextNode.asText().contains(Constant.NEXT)) {
-							msglistElement = extractListOfEmailsFromPage(anchor_nextNode, year, month);
-						} else {
-							isNextPageAvailable = false;	
-						}
-					} 
+						// Get the list of emails from 1st page
+						long startTime = System.currentTimeMillis();
+						currentMsgCount = 0;
+						HtmlElement msglistElement = extractListOfEmailsFromPage(anchor_monthNode, year, month);	
+						boolean isNextPageAvailable = true;
+						
+						// Get the list of emails from all pages
+						while (isNextPageAvailable) {
+							if(msglistElement != null) {
+								List<HtmlElement> th_pagesElements = msglistElement.getElementsByAttribute(Constant.TH, Constant.CLASS, Constant.PAGES);
+								HtmlElement th_pageElement = th_pagesElements.get(0);
+								HtmlElement anchor_nextNode = (HtmlElement)th_pageElement.getLastElementChild();
+								
+								if(anchor_nextNode != null && anchor_nextNode.getNodeName().equals(Constant.TAG_A) && anchor_nextNode.asText().contains(Constant.NEXT)) {
+									msglistElement = extractListOfEmailsFromPage(anchor_nextNode, year, month);
+								} else {
+									isNextPageAvailable = false;	
+								}	
+							}
+						} 
 
-					// Log information
-					if(logger.isInfoEnabled() || logger.isDebugEnabled()) {
-						logger.info("{} {} emails downloaded: {}" , month, year, currentMsgCount);
-						long endTime = System.currentTimeMillis();
-						logger.debug("Duration - Seconds : " + (endTime-startTime)/1000 + ", Minutes: " + (endTime-startTime)/(1000*60)); 
-						logger.debug("--------");
+						// Log information
+						if(logger.isInfoEnabled() || logger.isDebugEnabled()) {
+							logger.info("{} {} emails downloaded: {}" , month, year, currentMsgCount);
+							long endTime = System.currentTimeMillis();
+							logger.debug("Duration - Seconds : " + (endTime-startTime)/1000 + ", Minutes: " + (endTime-startTime)/(1000*60)); 
+							logger.debug("--------");
+						}
 					}
 				}
 			}
@@ -144,38 +159,75 @@ public class CrawlerThread implements Runnable {
 	public HtmlElement extractListOfEmailsFromPage(HtmlElement anchor_monthNode, String year, String month) throws CrawlException {
 		try {
 			HtmlAnchor anchor = (HtmlAnchor) anchor_monthNode;
-			HtmlPage monthResponse = anchor.click();
-			HtmlElement result = monthResponse.getHtmlElementById(Constant.MSGLIST);
-			HtmlTable table_msgList = (HtmlTable) result;
-			List<HtmlTableBody> tbody_msgslist = table_msgList.getBodies();
-			HtmlTableBody tbody_msg = tbody_msgslist.get(0);
-			
-			for (final HtmlTableRow tr_msg : tbody_msg.getRows()) {
-				for (final HtmlTableCell td_msg : tr_msg.getCells()) {
-					DomAttr td_msg_class = td_msg.getAttributeNode(Constant.CLASS);
-					
-					if(td_msg_class.getNodeValue().equals(Constant.SUBJECT)) {
-						DomNodeList<HtmlElement> anchor_msgNodes = td_msg.getElementsByTagName(Constant.TAG_A);
-						if(anchor_msgNodes.size() > 0) {
-							currentMsgCount += 1;	
-							extractEmailContent(anchor_msgNodes, year, month);
+			HtmlPage monthResponse = null;
+			if(controller.getNetUtil().isInternetReachable()) {
+				monthResponse = anchor.click();
+				HtmlElement result = monthResponse.getHtmlElementById(Constant.MSGLIST);
+				HtmlTable table_msgList = (HtmlTable) result;
+				List<HtmlTableBody> tbody_msgslist = table_msgList.getBodies();
+				HtmlTableBody tbody_msg = tbody_msgslist.get(0);
+				
+					for (final HtmlTableRow tr_msg : tbody_msg.getRows()) {
+						for (final HtmlTableCell td_msg : tr_msg.getCells()) {
+							
+							if(this.totalMsgCount > 0 && controller.getNetUtil().isInternetReachable()) {
+								DomAttr td_msg_class = td_msg.getAttributeNode(Constant.CLASS);
+								if(td_msg_class.getNodeValue().equals(Constant.SUBJECT)) {
+									DomNodeList<HtmlElement> anchor_msgNodes = td_msg.getElementsByTagName(Constant.TAG_A);
+									if(anchor_msgNodes.size() > 0) {
+										currentMsgCount += 1;	
+										logger.info("currentMsgCount:" + currentMsgCount + ", this.totalMsgCount:" + this.totalMsgCount); 
+										if(controller.getNetUtil().isInternetReachable()) {
+											extractEmailContent(anchor_msgNodes, year, month);
+										}
+									}
+								}
+							} else {
+								int m_elapsed = 0;
+								int m_length = 5000;
+								while(true) {
+									System.out.println("+");
+									if(controller.getNetUtil().isInternetReachable()) {
+										m_elapsed = 0;
+										break;
+									} else {
+										Thread.sleep(500);  // half-second
+										synchronized (this) {
+											m_elapsed += 500;
+											if(m_elapsed > m_length) {
+												shutdown();
+											}
+										}
+									}
+								}
+							}
+							
 						}
 					}
-				}
+				
+				return result;
+			} else {
+				logger.info("extractListOfEmailsFromPage - Not Reachable");
 			}
-			return result;
-		} catch (ElementNotFoundException | IOException e) {
-			logger.error("extract list of emails from page failed", e); 
-			throw new CrawlException(e);
-		} catch (CrawlException e) { 
-			throw e;
 		} catch (Exception e) {
-			logger.error("extract list of emails failed", e);
-			throw new CrawlException(e);
-		}
-		
+			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
+				System.out.println("GOT IT... GOT IT...extractListOfEmailsFromPage");
+			} else {
+				System.out.println("TRACE");
+				logger.info("EXCEPTION >>>>>>", e);
+				logger.error("extract list of emails failed", e);
+				throw new CrawlException(e);
+			}
+		} 
+		return null;
 	}
 	
+	private void shutdown() {
+		if(Thread.currentThread().isAlive()) {
+			
+		}
+	}
+
 	/**
 	 * Read emails
 	 * @param tdElements
@@ -194,22 +246,50 @@ public class CrawlerThread implements Runnable {
 			for (HtmlElement emailAnchor : emailAnchorNodes) {
 				anchor = (HtmlAnchor) emailAnchor;
 				emailAddress = anchor.getHrefAttribute();
-				emailResponse = anchor.click();
-				emailContent = emailResponse.asXml();
-				emailSentDate = parser.parseEmailSentDate(emailResponse);
 				
-				// Write email content to a file: <emailAddress>_<emailSentDate>
-				fileNameBuffer = new StringBuffer();
-				fileName = fileNameBuffer.append(emailAddress).append(Constant.UNDERSCORE).append(emailSentDate).toString();
-				getController().getFileUtil().downloadEmail(fileName, emailContent, year, month);
-				logger.debug("Email content: " + emailContent);
+				if(controller.getNetUtil().isInternetReachable()) {
+					emailResponse = anchor.click();
+					emailContent = emailResponse.asXml();
+					emailSentDate = parser.parseEmailSentDate(emailResponse);
+					
+					// Write email content to a file: <emailAddress>_<emailSentDate>
+					fileNameBuffer = new StringBuffer();
+					fileName = fileNameBuffer.append(emailAddress).append(Constant.UNDERSCORE).append(emailSentDate).toString();
+					controller.getFileUtil().downloadEmail(fileName, emailContent, year, month);
+					logger.debug("Email content: " + emailContent);
+					
+					this.totalMsgCount--;
+				} else {
+					logger.info("extractEmailContent - Not Reachable");
+					int m_elapsed = 0;
+					int m_length = 5000;
+					while(true) {
+						System.out.println("-");
+						if(controller.getNetUtil().isInternetReachable()) {
+							m_elapsed = 0;
+							break;
+						} else {
+							Thread.sleep(500);  // half-second
+							synchronized (this) {
+								m_elapsed += 500;
+								if(m_elapsed > m_length) {
+									shutdown();
+								}
+							}
+						}
+					}
+				}	
 			}	
-		} catch (CrawlException e) { 
-			throw e;
 		} catch (Exception e) {
-			logger.error("extract email content failed", e);
-			throw new CrawlException(e);
-		}
+			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
+				System.out.println("GOT IT... GOT IT...extractEmailContent");
+			} else {
+				System.out.println("TRACE");
+				logger.info("EXCEPTION <<<<<<<<<<<<<<", e);
+				logger.error("extract email content failed", e);
+				throw new CrawlException(e);
+			}
+		} 
 	}
 
 	public int getCurrentMsgCount() {
@@ -250,6 +330,14 @@ public class CrawlerThread implements Runnable {
 
 	public Parser getParser() {
 		return parser;
+	}
+
+	public int getTotalMsgCount() {
+		return totalMsgCount;
+	}
+
+	public void setTotalMsgCount(int totalMsgCount) {
+		this.totalMsgCount = totalMsgCount;
 	}
 
 }

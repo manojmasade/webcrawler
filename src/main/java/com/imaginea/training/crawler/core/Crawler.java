@@ -53,6 +53,7 @@ public class Crawler implements Runnable {
 		try {
 			init();
 			processPage();
+			logger.info("CRAWLER RUN END"); 
 		} catch (CrawlException e) {
 			logger.error("run failed", e);
 		}
@@ -70,30 +71,44 @@ public class Crawler implements Runnable {
 			String month = null; 
 			String msgCount = null;
 			final WebClient webClient = new WebClient();
+			webClient.getOptions().setTimeout(Config.CONNECTION_TIMEOUT);
+			webClient.setJavaScriptTimeout(Config.JAVASCRIPT_TIMEOUT); 
 			final HtmlPage page = parser.getPage(webClient);
-			HtmlElement table_yearElement = parser.parseTableForYear(page, this.year);
-			HtmlTable table_year = (HtmlTable) table_yearElement;
-			HtmlTableBody tbody_year = table_year.getBodies().get(0);
+			
+			if(page != null && controller.getNetUtil().isInternetReachable()) {
+				HtmlElement table_yearElement = parser.parseTableForYear(page, this.year);
+				HtmlTable table_year = (HtmlTable) table_yearElement;
+				HtmlTableBody tbody_year = table_year.getBodies().get(0);
 
-			// Months
-			for (final HtmlTableRow tr_monthNode : tbody_year.getRows()) {
+				// Months
+				for (final HtmlTableRow tr_monthNode : tbody_year.getRows()) {
 
-				if(logger.isInfoEnabled() || logger.isDebugEnabled()){
-					List<HtmlElement> td_monthDateElement = tr_monthNode.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
-					month = td_monthDateElement.get(0).asText();
-					month = month.substring(0, month.indexOf(Constant.SPACE));
-					List<HtmlElement> td_monthMsgcountElement = tr_monthNode.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.MSGCOUNT);
-					msgCount = td_monthMsgcountElement.get(0).asText();
-					logger.info("year:" + year + " month:" + month + " emails: " + msgCount);
+					if(logger.isInfoEnabled() || logger.isDebugEnabled()){
+						List<HtmlElement> td_monthDateElement = tr_monthNode.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
+						month = td_monthDateElement.get(0).asText();
+						month = month.substring(0, month.indexOf(Constant.SPACE));
+						List<HtmlElement> td_monthMsgcountElement = tr_monthNode.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.MSGCOUNT);
+						msgCount = td_monthMsgcountElement.get(0).asText();
+						logger.info("year:" + year + " month:" + month + " emails: " + msgCount);
+					}
+					
+					// Child thread for months
+					CrawlerThread crawlerThread = new CrawlerThread(parser, controller, month, year);
+		        	crawlerThread.setName(month);
+		        	crawlerThread.setTotalMsgCount(Integer.parseInt(msgCount));
+					Thread child = new Thread(crawlerThread);
+					child.start();	
 				}
-				
-				// Child thread for months
-				CrawlerThread crawlerThread = new CrawlerThread(parser, controller, month, year);
-	        	crawlerThread.setName(month);
-				Thread child = new Thread(crawlerThread);
-				child.start();	
+				//webClient.closeAllWindows();
+			} else {
+				while(true) {
+					System.out.println("#");
+					if(controller.getNetUtil().isInternetReachable()) {
+						break;
+					}
+				}
+				processPage();
 			}
-			//webClient.closeAllWindows();
 			logger.debug("processPage end");
 		} catch (FailingHttpStatusCodeException e) {
 			logger.error("Http status code exception", e);

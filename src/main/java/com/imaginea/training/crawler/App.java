@@ -19,7 +19,7 @@ public class App {
     	long processStartTime = System.currentTimeMillis();
     	System.out.println("BEGIN DATE:" + new Date());
     	
-    	String years[] = { "2015", "2014" };
+    	String years[] = { "2014" };
 
     	for (int i = 0; i < years.length; i++) {
         	Crawler crawler = new Crawler(years[i]);

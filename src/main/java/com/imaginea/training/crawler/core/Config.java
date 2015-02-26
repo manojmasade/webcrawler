@@ -1,5 +1,7 @@
 package com.imaginea.training.crawler.core;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +31,13 @@ public class Config {
 	/**
 	 * Connection timeout in milliseconds
 	 */
-	private int connectionTimeout = 30000;
+	public static final int CONNECTION_TIMEOUT = 45000;
+	
+	public static final int JAVASCRIPT_TIMEOUT = 5000;
+	
+	public static final int SHUTDOWN_TIME = 15000;
+	
+	public static AtomicInteger IDLE_TIME = new AtomicInteger(0);
 	
 
 	public String getCrawlStorageFolder() {
@@ -48,12 +56,4 @@ public class Config {
 		this.resumeCrawling = resumeCrawling;
 	}
 
-	public int getConnectionTimeout() {
-		return connectionTimeout;
-	}
-
-	public void setConnectionTimeout(int connectionTimeout) {
-		this.connectionTimeout = connectionTimeout;
-	}
-	
 }

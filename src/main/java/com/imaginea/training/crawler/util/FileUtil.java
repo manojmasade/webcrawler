@@ -38,6 +38,47 @@ public class FileUtil implements IFileUtil {
 	    return result;
 	}
 	
+	@Override
+	public void createFile(String dir, String fileName, String content)
+			throws CrawlException {
+		File file = null;
+		FileOutputStream fop = null;
+		dir = Config.DIR_DOWNLOAD_EMAILS;
+		
+		try {
+			File fileDir = new File(dir);
+		    if (!fileDir.exists()) {
+		    	fileDir.mkdir();
+		    	logger.debug("{} directory created", Config.DIR_DOWNLOAD_EMAILS);
+		    }
+		    
+			file = new File(fileDir, fileName + Config.FILE_EXTENSION);
+			if(!file.exists()) {
+		 		logger.debug("Creating a new file as it does not exist : " + fileName);
+				file.createNewFile();
+				fop = new FileOutputStream(file);
+				byte[] contentInBytes = content.getBytes();
+				fop.write(contentInBytes);
+				fop.flush();
+				fop.close();
+		 	} else {
+		 		logger.info("File {} already exists", file.getPath());
+		 	}  
+		 } catch (IOException e) {
+			 logger.error("FileUtil - creating a file failed", e);
+			 throw new CrawlException(e);
+		 } finally {
+			try {
+				if (fop != null) {
+					fop.close();
+				}
+			} catch (IOException e) {
+				logger.error("FileUtil - closing file output stream failed", e);
+				throw new CrawlException(e);
+			}
+		 }
+	}
+	
 	/**
 	 * 
 	 * @param fileName

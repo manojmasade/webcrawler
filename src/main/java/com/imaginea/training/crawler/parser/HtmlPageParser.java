@@ -1,6 +1,9 @@
 package com.imaginea.training.crawler.parser;
 
 import java.io.IOException;
+import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,10 +16,13 @@ import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.imaginea.training.crawler.constant.Constant;
 import com.imaginea.training.crawler.exception.CrawlException;
+import com.imaginea.training.crawler.util.NetUtil;
 
 public class HtmlPageParser implements Parser {
 	
 	private static final Logger logger = LoggerFactory.getLogger(HtmlPageParser.class);
+	
+	private NetUtil netUtil = new NetUtil();
 	
 	/**
 	 * Return the <table></table> which contains emails of Multiple years
@@ -74,11 +80,22 @@ public class HtmlPageParser implements Parser {
 	public HtmlPage getPage(WebClient webClient) throws CrawlException {
 		HtmlPage result = null;
 		try {
-			result = webClient.getPage(Constant.URL_MAVEN_USERS);
-		} catch (FailingHttpStatusCodeException | IOException e) {
-			logger.error("getting page for url {} failed : {}", Constant.URL_MAVEN_USERS, e);
-			throw new CrawlException(e);
-		}
+			if(netUtil.isInternetReachable()) {
+				result = webClient.getPage(Constant.URL_MAVEN_USERS);	
+			} else {
+				logger.info("Internet not reachable in getPage");
+			}
+		} catch (Exception e) { 
+			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
+				System.out.println("GOT IT... GOT IT...getPage");
+				if(!netUtil.isInternetReachable()) {
+					//getPage(webClient);
+					logger.info("do something in  getPage");
+				}
+			} else {
+				throw new CrawlException(e);	
+			}
+		} 
 		return result;
 	}
 	
