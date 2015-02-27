@@ -1,6 +1,5 @@
 package com.imaginea.training.crawler.parser;
 
-import java.io.IOException;
 import java.net.NoRouteToHostException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
@@ -10,7 +9,6 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
@@ -89,7 +87,6 @@ public class HtmlPageParser implements Parser {
 			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
 				System.out.println("GOT IT... GOT IT...getPage");
 				if(!netUtil.isInternetReachable()) {
-					//getPage(webClient);
 					logger.info("do something in  getPage");
 				}
 			} else {
