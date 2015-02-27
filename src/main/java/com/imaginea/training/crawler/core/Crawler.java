@@ -1,6 +1,9 @@
 package com.imaginea.training.crawler.core;
 
+import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +35,18 @@ public class Crawler implements Runnable {
 	private Controller controller;
 	
 	private Parser parser;
+	
+	private int m_elapsed = 0;
+	
+	private int m_length = Config.SHUTDOWN_TIME;
+	
+	private boolean shutdown = false;
+	
+	private boolean sleep = false;
+	
+	private boolean terminate = false;
+	
+	private Map<String, Boolean> shutdownMap = new LinkedHashMap<String, Boolean>();
 
 	private String months[] = {
 		"Dec", "Nov", "Oct", "Sep", "Aug", "Jul",
@@ -92,22 +107,40 @@ public class Crawler implements Runnable {
 						logger.info("year:" + year + " month:" + month + " emails: " + msgCount);
 					}
 					
-					// Child thread for months
-					CrawlerThread crawlerThread = new CrawlerThread(parser, controller, month, year);
+					// Month threads
+					CrawlerThread crawlerThread = new CrawlerThread(this, parser, controller, month, year);
 		        	crawlerThread.setName(month);
 		        	crawlerThread.setTotalMsgCount(Integer.parseInt(msgCount));
 					Thread child = new Thread(crawlerThread);
-					child.start();	
+					child.start();
 				}
+				
+				// Monitor thread
+				CrawlMonitor crawMonitor = new CrawlMonitor(this);
+				Thread monitor = new Thread(crawMonitor);
+				monitor.start();
+
 				//webClient.closeAllWindows();
 			} else {
-				while(true) {
-					System.out.println("#");
+				while(true && !this.isShutdown()) {
 					if(controller.getNetUtil().isInternetReachable()) {
+						this.setM_elapsed(0);
 						break;
+					} else {
+						synchronized (this) {
+							if(this.getM_elapsed() == this.getM_length()) {
+								shutdown();
+							} else {
+								logger.info("SLEEP {}", new Date());
+								Thread.sleep(Config.SLEEP_INTERVAL);
+								this.setM_elapsed(this.getM_elapsed() + Config.SLEEP_INTERVAL);	
+							}	
+						}
 					}
 				}
-				processPage();
+				if(controller.getNetUtil().isInternetReachable()) {
+					processPage();	
+				}
 			}
 			logger.debug("processPage end");
 		} catch (FailingHttpStatusCodeException e) {
@@ -118,6 +151,16 @@ public class Crawler implements Runnable {
 		} catch (Exception e) {
 			logger.error("processPage failed", e);
 			throw new CrawlException(e);
+		}
+	}
+	
+	private void shutdown() {
+		if(!this.getShutdownMap().containsKey(this.name)) {
+			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, this.name, Config.STATE_INITIALIZE + Constant.SPACE + String.valueOf(0));
+			//this.getShutdownMap().put(this.name, true);	
+			this.setShutdown(true);
+			this.setTerminate(true);
+			logger.info("Shutdown Crawler"); 
 		}
 	}
 	
@@ -135,5 +178,53 @@ public class Crawler implements Runnable {
 
 	public String getYear() {
 		return year;
+	}
+
+	public synchronized int getM_elapsed() {
+		return m_elapsed;
+	}
+
+	public synchronized void setM_elapsed(int m_elapsed) {
+		this.m_elapsed = m_elapsed;
+	}
+
+	public int getM_length() {
+		return m_length;
+	}
+
+	public void setM_length(int m_length) {
+		this.m_length = m_length;
+	}
+
+	public boolean isShutdown() {
+		return shutdown;
+	}
+
+	public void setShutdown(boolean shutdown) {
+		this.shutdown = shutdown;
+	}
+
+	public synchronized Map<String, Boolean> getShutdownMap() {
+		return shutdownMap;
+	}
+
+	public synchronized void setShutdownMap(Map<String, Boolean> shutdownMap) {
+		this.shutdownMap = shutdownMap;
+	}
+
+	public synchronized boolean isSleep() {
+		return sleep;
+	}
+
+	public synchronized void setSleep(boolean sleep) {
+		this.sleep = sleep;
+	}
+
+	public boolean isTerminate() {
+		return terminate;
+	}
+
+	public void setTerminate(boolean terminate) {
+		this.terminate = terminate;
 	}
 }
