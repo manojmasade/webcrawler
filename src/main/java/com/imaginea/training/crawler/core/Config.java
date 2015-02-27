@@ -31,13 +31,17 @@ public class Config {
 	/**
 	 * Connection timeout in milliseconds
 	 */
-	public static final int CONNECTION_TIMEOUT = 45000;
+	public static final int CONNECTION_TIMEOUT = 30000;
 	
-	public static final int JAVASCRIPT_TIMEOUT = 5000;
+	public static final int JAVASCRIPT_TIMEOUT = 3000;
 	
-	public static final int SHUTDOWN_TIME = 15000;
+	public static final int SHUTDOWN_TIME = 5000;
 	
-	public static AtomicInteger IDLE_TIME = new AtomicInteger(0);
+	public static final int SLEEP_INTERVAL = 1000;
+	
+	public static final String STATE_INITIALIZE = "INITIALIZE";
+	
+	public static final String STATE_RUNNING = "RUNNING";
 	
 
 	public String getCrawlStorageFolder() {
