@@ -29,6 +29,11 @@ public class Config {
 	private boolean resumeCrawling = false;
 	
 	/**
+	 * Skips internet connectivity check when safeMode is true
+	 */
+	public static final boolean RUN_SAFEMODE = true;
+	
+	/**
 	 * Connection timeout in milliseconds
 	 */
 	public static final int CONNECTION_TIMEOUT = 30000;
@@ -59,5 +64,5 @@ public class Config {
 	public void setResumeCrawling(boolean resumeCrawling) {
 		this.resumeCrawling = resumeCrawling;
 	}
-
+	
 }

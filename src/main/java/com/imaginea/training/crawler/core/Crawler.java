@@ -1,5 +1,6 @@
 package com.imaginea.training.crawler.core;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,6 +48,8 @@ public class Crawler implements Runnable {
 	private boolean terminate = false;
 	
 	private Map<String, Boolean> shutdownMap = new LinkedHashMap<String, Boolean>();
+	
+	private List<String> totalMonthsCompletedList = new ArrayList<String>();
 
 	private String months[] = {
 		"Dec", "Nov", "Oct", "Sep", "Aug", "Jul",
@@ -226,5 +229,13 @@ public class Crawler implements Runnable {
 
 	public void setTerminate(boolean terminate) {
 		this.terminate = terminate;
+	}
+
+	public synchronized List<String> getTotalMonthsCompletedList() {
+		return totalMonthsCompletedList;
+	}
+
+	public synchronized void setTotalMonthsCompletedList(List<String> totalMonthsCompletedList) {
+		this.totalMonthsCompletedList = totalMonthsCompletedList;
 	}
 }

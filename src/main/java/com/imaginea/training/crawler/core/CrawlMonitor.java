@@ -15,13 +15,11 @@ public class CrawlMonitor implements Runnable {
 	@Override
 	public void run() {
 		while (!crawler.isTerminate()) {
-			if(crawler.getShutdownMap().size() == 12){
+			if(crawler.getShutdownMap().size() == 12 || crawler.getTotalMonthsCompletedList().size() == 12){
 				crawler.setTerminate(true);
-				//crawler.setM_elapsed(0);
-				//crawler.setShutdown(false);
 			}
 		}
-		logger.info("Crawling process exiting abnormally");
+		logger.info("Crawling process exiting status for months, Completed:{}, Shutdown:{}", crawler.getTotalMonthsCompletedList().size(), crawler.getShutdownMap().size());
 		System.exit(1);
 	}
 

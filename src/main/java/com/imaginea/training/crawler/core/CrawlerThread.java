@@ -136,6 +136,7 @@ public class CrawlerThread implements Runnable {
 
 						// Log information
 						if(logger.isInfoEnabled() || logger.isDebugEnabled()) {
+							crawler.getTotalMonthsCompletedList().add(month);
 							logger.info("{} {} emails downloaded: {}" , month, year, currentMsgCount);
 							long endTime = System.currentTimeMillis();
 							logger.debug("Duration - Seconds : " + (endTime-startTime)/1000 + ", Minutes: " + (endTime-startTime)/(1000*60)); 
