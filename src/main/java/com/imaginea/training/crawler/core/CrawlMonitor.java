@@ -15,9 +15,9 @@ public class CrawlMonitor implements Runnable {
 	
 	@Override
 	public void run() {
-		while (!crawler.isTerminate()) {
+		while (!crawler.isExit()) {
 			if(crawler.getShutdownMap().size() == 12 || crawler.getTotalMonthsCompletedList().size() == 12){
-				crawler.setTerminate(true);
+				crawler.setExit(true);
 			}
 		}
 		logger.info("Crawling process exiting status for months, Completed:{}, Shutdown:{}", crawler.getTotalMonthsCompletedList().size(), crawler.getShutdownMap().size());

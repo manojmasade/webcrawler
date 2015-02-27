@@ -185,7 +185,7 @@ public class CrawlerThread implements Runnable {
 								if(td_msg_class.getNodeValue().equals(Constant.SUBJECT)) {
 									DomNodeList<HtmlElement> anchor_msgNodes = td_msg.getElementsByTagName(Constant.TAG_A);
 									if(anchor_msgNodes.size() > 0) {
-										logger.info("currentMsgCount:" + currentMsgCount + ", this.totalMsgCount:" + this.totalMsgCount); 
+										logger.debug("currentMsgCount:" + currentMsgCount + ", this.totalMsgCount:" + this.totalMsgCount); 
 										if(controller.getNetUtil().isInternetReachable()) {
 											extractEmailContent(anchor_msgNodes, year, month);
 										}
@@ -273,17 +273,17 @@ public class CrawlerThread implements Runnable {
 	private void handleShutdown() {
 		while(true && !crawler.isShutdown()) {
 			if(controller.getNetUtil().isInternetReachable()) {
-				crawler.setM_elapsed(0);
+				crawler.setElapsedDuration(0);
 				break;
 			} else {
 				try {
 					synchronized (this) {
-						if(crawler.getM_elapsed() == crawler.getM_length()) {
+						if(crawler.getElapsedDuration() == crawler.getShutdownDuration()) {
 							storeCrawlersData();
 						} else {
 							logger.info("SLEEP {}", new Date());
 							Thread.sleep(Config.SLEEP_INTERVAL);
-							crawler.setM_elapsed(crawler.getM_elapsed() + Config.SLEEP_INTERVAL);	
+							crawler.setElapsedDuration(crawler.getElapsedDuration() + Config.SLEEP_INTERVAL);	
 						}	
 					}
 				} catch (InterruptedException e1) {}  

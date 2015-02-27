@@ -38,15 +38,13 @@ public class Crawler implements Runnable {
 	
 	private Parser parser;
 	
-	private int m_elapsed = 0;
+	private int elapsedDuration = 0;
 	
-	private int m_length = Config.SHUTDOWN_TIME;
+	private int shutdownDuration = Config.SHUTDOWN_TIME;
 	
 	private boolean shutdown = false;
 	
-	private boolean sleep = false;
-	
-	private boolean terminate = false;
+	private boolean exit = false;
 	
 	private Map<String, Boolean> shutdownMap = new LinkedHashMap<String, Boolean>();
 	
@@ -72,7 +70,6 @@ public class Crawler implements Runnable {
 		try {
 			init();
 			processPage();
-			logger.info("CRAWLER RUN END"); 
 		} catch (CrawlException e) {
 			logger.error("run failed", e);
 		}
@@ -126,22 +123,7 @@ public class Crawler implements Runnable {
 
 				//webClient.closeAllWindows();
 			} else {
-				while(true && !this.isShutdown()) {
-					if(controller.getNetUtil().isInternetReachable()) {
-						this.setM_elapsed(0);
-						break;
-					} else {
-						synchronized (this) {
-							if(this.getM_elapsed() == this.getM_length()) {
-								shutdown();
-							} else {
-								logger.info("SLEEP {}", new Date());
-								Thread.sleep(Config.SLEEP_INTERVAL);
-								this.setM_elapsed(this.getM_elapsed() + Config.SLEEP_INTERVAL);	
-							}	
-						}
-					}
-				}
+				handleShutdown();
 				if(controller.getNetUtil().isInternetReachable()) {
 					processPage();	
 				}
@@ -157,13 +139,39 @@ public class Crawler implements Runnable {
 			throw new CrawlException(e);
 		}
 	}
+
+	/**
+	 * Handle shutdown process
+	 */
+	private void handleShutdown() {
+		while(true && !this.isShutdown()) {
+			if(controller.getNetUtil().isInternetReachable()) {
+				this.setElapsedDuration(0);
+				break;
+			} else {
+				try {
+					synchronized (this) {
+						if(this.getElapsedDuration() == this.getShutdownDuration()) {
+							storeCrawlersData();
+						} else {
+							logger.info("SLEEP {}", new Date());
+							Thread.sleep(Config.SLEEP_INTERVAL);
+							this.setElapsedDuration(this.getElapsedDuration() + Config.SLEEP_INTERVAL);	
+						}	
+					}
+				} catch (InterruptedException e1) {} 
+			}
+		}
+	}
 	
-	private void shutdown() {
+	/**
+	 * Save the crawler threads information to file for resume operation
+	 */
+	private void storeCrawlersData() {
 		if(!this.getShutdownMap().containsKey(this.name)) {
 			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, this.name, Config.STATE_INITIALIZE + Constant.SPACE + String.valueOf(0));
-			//this.getShutdownMap().put(this.name, true);	
 			this.setShutdown(true);
-			this.setTerminate(true);
+			this.setExit(true);
 			logger.info("Shutdown Crawler"); 
 		}
 	}
@@ -184,20 +192,20 @@ public class Crawler implements Runnable {
 		return year;
 	}
 
-	public synchronized int getM_elapsed() {
-		return m_elapsed;
+	public synchronized int getElapsedDuration() {
+		return elapsedDuration;
 	}
 
-	public synchronized void setM_elapsed(int m_elapsed) {
-		this.m_elapsed = m_elapsed;
+	public synchronized void setElapsedDuration(int elapsedDuration) {
+		this.elapsedDuration = elapsedDuration;
 	}
 
-	public int getM_length() {
-		return m_length;
+	public int getShutdownDuration() {
+		return shutdownDuration;
 	}
 
-	public void setM_length(int m_length) {
-		this.m_length = m_length;
+	public void setShutdownDuration(int shutdownDuration) {
+		this.shutdownDuration = shutdownDuration;
 	}
 
 	public synchronized boolean isShutdown() {
@@ -216,20 +224,12 @@ public class Crawler implements Runnable {
 		this.shutdownMap = shutdownMap;
 	}
 
-	public synchronized boolean isSleep() {
-		return sleep;
+	public boolean isExit() {
+		return exit;
 	}
 
-	public synchronized void setSleep(boolean sleep) {
-		this.sleep = sleep;
-	}
-
-	public boolean isTerminate() {
-		return terminate;
-	}
-
-	public void setTerminate(boolean terminate) {
-		this.terminate = terminate;
+	public void setExit(boolean terminate) {
+		this.exit = terminate;
 	}
 
 	public synchronized List<String> getTotalMonthsCompletedList() {
