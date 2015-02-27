@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.net.NoRouteToHostException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.Date;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.gargoylesoftware.htmlunit.ElementNotFoundException;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.DomAttr;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
@@ -27,11 +27,14 @@ import com.imaginea.training.crawler.parser.Parser;
 public class CrawlerThread implements Runnable {
 	private static final Logger logger = LoggerFactory.getLogger(CrawlerThread.class);
 
+	private Crawler crawler;
+	
 	private WebClient webClient = null;
 
 	private HtmlPage page = null;
 	
 	private HtmlElement table_yearElement = null;
+	
 	private HtmlTableBody tbody_year = null;
 	
 	private int currentMsgCount = 0;
@@ -47,16 +50,15 @@ public class CrawlerThread implements Runnable {
 	private Parser parser;
 	
 	private int totalMsgCount = 0;
+	
 
-	public CrawlerThread(Parser parser, Controller controller, String month, String year) {
+	public CrawlerThread(Crawler crawler, Parser parser, Controller controller, String month, String year) {
 		logger.debug("year:" + year + ",month:" + month);
-		//this.tr_monthNode = tr_monthNode;
+		this.crawler = crawler;
 		this.parser = parser;
 		this.controller = controller;
 		this.month = month;
 		this.year = year;
-
-		
 	}
 	
 	private void init() {
@@ -88,7 +90,7 @@ public class CrawlerThread implements Runnable {
 			
 			for (final HtmlTableRow result : this.tbody_year.getRows()) {
 				List<HtmlElement> td_monthDateElement = result.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
-				logger.info("td_monthDateElement: {}", td_monthDateElement);
+				logger.debug("td_monthDateElement: {}", td_monthDateElement);
 				if(td_monthDateElement.get(0).asText().contains(month)) {
 					return result;	
 				}
@@ -166,16 +168,21 @@ public class CrawlerThread implements Runnable {
 				HtmlTable table_msgList = (HtmlTable) result;
 				List<HtmlTableBody> tbody_msgslist = table_msgList.getBodies();
 				HtmlTableBody tbody_msg = tbody_msgslist.get(0);
-				
-					for (final HtmlTableRow tr_msg : tbody_msg.getRows()) {
-						for (final HtmlTableCell td_msg : tr_msg.getCells()) {
-							
+				List<HtmlTableRow> tr_msgs = tbody_msg.getRows();
+
+				for (int i = 0; (i < tr_msgs.size() && !crawler.isShutdown()); i++) {
+					final HtmlTableRow tr_msg = tr_msgs.get(i);
+					List<HtmlTableCell> td_msgs = tr_msg.getCells();
+					  
+					for (int j = 0; (j < td_msgs.size() && !crawler.isShutdown()); j++) {
+						final HtmlTableCell td_msg = td_msgs.get(j); 
+						
+						if(!crawler.isShutdown()) {
 							if(this.totalMsgCount > 0 && controller.getNetUtil().isInternetReachable()) {
 								DomAttr td_msg_class = td_msg.getAttributeNode(Constant.CLASS);
 								if(td_msg_class.getNodeValue().equals(Constant.SUBJECT)) {
 									DomNodeList<HtmlElement> anchor_msgNodes = td_msg.getElementsByTagName(Constant.TAG_A);
 									if(anchor_msgNodes.size() > 0) {
-										currentMsgCount += 1;	
 										logger.info("currentMsgCount:" + currentMsgCount + ", this.totalMsgCount:" + this.totalMsgCount); 
 										if(controller.getNetUtil().isInternetReachable()) {
 											extractEmailContent(anchor_msgNodes, year, month);
@@ -183,38 +190,55 @@ public class CrawlerThread implements Runnable {
 									}
 								}
 							} else {
-								int m_elapsed = 0;
-								int m_length = 5000;
-								while(true) {
-									System.out.println("+");
+								while(true && !crawler.isShutdown()) {
+									logger.info("extractListOfEmailsFromPage() FOR");
 									if(controller.getNetUtil().isInternetReachable()) {
-										m_elapsed = 0;
+										crawler.setM_elapsed(0);
 										break;
 									} else {
-										Thread.sleep(500);  // half-second
 										synchronized (this) {
-											m_elapsed += 500;
-											if(m_elapsed > m_length) {
+											if(crawler.getM_elapsed() == crawler.getM_length()) {
 												shutdown();
-											}
+											} else {
+												logger.info("SLEEP {}", new Date());
+												Thread.sleep(Config.SLEEP_INTERVAL);
+												crawler.setM_elapsed(crawler.getM_elapsed() + Config.SLEEP_INTERVAL);	
+											}	
 										}
 									}
 								}
 							}
-							
 						}
 					}
-				
+				}
 				return result;
 			} else {
+				// might not require
 				logger.info("extractListOfEmailsFromPage - Not Reachable");
+				shutdown();
 			}
 		} catch (Exception e) {
 			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
-				System.out.println("GOT IT... GOT IT...extractListOfEmailsFromPage");
+				while(true && !crawler.isShutdown()) {
+					logger.info("extractListOfEmailsFromPage() FOR");
+					if(controller.getNetUtil().isInternetReachable()) {
+						crawler.setM_elapsed(0);
+						break;
+					} else {
+						try {
+							synchronized (this) {
+								if(crawler.getM_elapsed() == crawler.getM_length()) {
+									shutdown();
+								} else {
+									logger.info("SLEEP {}", new Date());
+									Thread.sleep(Config.SLEEP_INTERVAL);
+									crawler.setM_elapsed(crawler.getM_elapsed() + Config.SLEEP_INTERVAL);	
+								}	
+							}
+						} catch (InterruptedException e1) {}
+					}
+				}
 			} else {
-				System.out.println("TRACE");
-				logger.info("EXCEPTION >>>>>>", e);
 				logger.error("extract list of emails failed", e);
 				throw new CrawlException(e);
 			}
@@ -223,8 +247,11 @@ public class CrawlerThread implements Runnable {
 	}
 	
 	private void shutdown() {
-		if(Thread.currentThread().isAlive()) {
-			
+		if(!crawler.getShutdownMap().containsKey(this.name)) {
+			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, this.name, Config.STATE_RUNNING + Constant.SPACE + String.valueOf(currentMsgCount));
+			crawler.getShutdownMap().put(this.name, true);	
+			crawler.setShutdown(true);
+			logger.info("Shutdown CrawlerThread"); 
 		}
 	}
 
@@ -247,45 +274,67 @@ public class CrawlerThread implements Runnable {
 				anchor = (HtmlAnchor) emailAnchor;
 				emailAddress = anchor.getHrefAttribute();
 				
-				if(controller.getNetUtil().isInternetReachable()) {
-					emailResponse = anchor.click();
-					emailContent = emailResponse.asXml();
-					emailSentDate = parser.parseEmailSentDate(emailResponse);
-					
-					// Write email content to a file: <emailAddress>_<emailSentDate>
-					fileNameBuffer = new StringBuffer();
-					fileName = fileNameBuffer.append(emailAddress).append(Constant.UNDERSCORE).append(emailSentDate).toString();
-					controller.getFileUtil().downloadEmail(fileName, emailContent, year, month);
-					logger.debug("Email content: " + emailContent);
-					
-					this.totalMsgCount--;
-				} else {
-					logger.info("extractEmailContent - Not Reachable");
-					int m_elapsed = 0;
-					int m_length = 5000;
-					while(true) {
-						System.out.println("-");
-						if(controller.getNetUtil().isInternetReachable()) {
-							m_elapsed = 0;
-							break;
-						} else {
-							Thread.sleep(500);  // half-second
-							synchronized (this) {
-								m_elapsed += 500;
-								if(m_elapsed > m_length) {
-									shutdown();
+				if(!crawler.isShutdown()) {
+					if(controller.getNetUtil().isInternetReachable()) {
+						emailResponse = anchor.click();
+						emailContent = emailResponse.asXml();
+						emailSentDate = parser.parseEmailSentDate(emailResponse);
+						
+						// Write email content to a file: <emailAddress>_<emailSentDate>
+						fileNameBuffer = new StringBuffer();
+						fileName = fileNameBuffer.append(emailAddress).append(Constant.UNDERSCORE).append(emailSentDate).toString();
+						controller.getFileUtil().downloadEmail(fileName, emailContent, year, month);
+						logger.debug("Email content: " + emailContent);
+						this.currentMsgCount += 1;	
+						this.totalMsgCount -= 1;
+					} else {
+						logger.info("extractEmailContent - Not Reachable");
+						while(true && !crawler.isShutdown()) {
+							logger.info("extractEmailContent() FOR");
+							if(controller.getNetUtil().isInternetReachable()) {
+								crawler.setM_elapsed(0);
+								break;
+							} else {
+								synchronized (this) {
+									if(crawler.getM_elapsed() == crawler.getM_length()) {
+										shutdown();
+									} else {
+										logger.info("SLEEP {}", new Date());
+										Thread.sleep(Config.SLEEP_INTERVAL);
+										crawler.setM_elapsed(crawler.getM_elapsed() + Config.SLEEP_INTERVAL);	
+									}	
 								}
 							}
 						}
 					}
-				}	
+				} else {
+					shutdown();
+				}
 			}	
 		} catch (Exception e) {
 			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
-				System.out.println("GOT IT... GOT IT...extractEmailContent");
+				while(true && !crawler.isShutdown()) {
+					if(controller.getNetUtil().isInternetReachable()) {
+						crawler.setM_elapsed(0);
+						break;
+					} else {
+						try {
+							synchronized (this) {
+								if(crawler.getM_elapsed() == crawler.getM_length()) {
+									shutdown();
+								} else {
+									logger.info("SLEEP {}", new Date());
+									Thread.sleep(Config.SLEEP_INTERVAL);
+									crawler.setM_elapsed(crawler.getM_elapsed() + Config.SLEEP_INTERVAL);	
+								}	
+							}
+						} catch (InterruptedException e1) {}  
+					}
+				}
+				if(crawler.isShutdown()) {
+					shutdown();
+				}
 			} else {
-				System.out.println("TRACE");
-				logger.info("EXCEPTION <<<<<<<<<<<<<<", e);
 				logger.error("extract email content failed", e);
 				throw new CrawlException(e);
 			}
@@ -312,17 +361,9 @@ public class CrawlerThread implements Runnable {
 		return year;
 	}
 
-	/*public void setYear(String year) {
-		this.year = year;
-	}*/
-
 	public String getMonth() {
 		return month;
 	}
-
-	/*public void setMonth(String month) {
-		this.month = month;
-	}*/
 
 	public Controller getController() {
 		return controller;
