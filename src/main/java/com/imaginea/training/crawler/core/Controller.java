@@ -22,7 +22,7 @@ public class Controller {
 	/**
 	 * Is crawler shutdown abnormally as connection is not available
 	 */
-	protected boolean shuttingDown;
+	//protected boolean shuttingDown;
 	
 	private FileUtil fileUtil = null;
 	
@@ -30,7 +30,7 @@ public class Controller {
 	
 	public Controller() {
 		finished = false;
-		shuttingDown = false;
+		//shuttingDown = false;
 		fileUtil = new FileUtil();
 		netUtil = new NetUtil();
 	}
