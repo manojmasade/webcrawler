@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CrawlMonitor implements Runnable {
+	
 	private static final Logger logger = LoggerFactory.getLogger(CrawlMonitor.class);
 
 	private Crawler crawler;

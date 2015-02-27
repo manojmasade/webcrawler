@@ -27,6 +27,7 @@ import com.imaginea.training.crawler.parser.Parser;
  *
  */
 public class Crawler implements Runnable {
+	
 	private static final Logger logger = LoggerFactory.getLogger(Crawler.class);
 	
 	private String name;
@@ -199,11 +200,11 @@ public class Crawler implements Runnable {
 		this.m_length = m_length;
 	}
 
-	public boolean isShutdown() {
+	public synchronized boolean isShutdown() {
 		return shutdown;
 	}
 
-	public void setShutdown(boolean shutdown) {
+	public synchronized void setShutdown(boolean shutdown) {
 		this.shutdown = shutdown;
 	}
 

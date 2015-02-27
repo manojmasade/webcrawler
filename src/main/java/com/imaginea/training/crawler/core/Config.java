@@ -1,7 +1,5 @@
 package com.imaginea.training.crawler.core;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +9,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class Config {
+	
 	private static final Logger logger = LoggerFactory.getLogger(Config.class);
 	
 	public static final String DIR_DOWNLOAD_EMAILS = "tmp";

@@ -25,6 +25,7 @@ import com.imaginea.training.crawler.exception.CrawlException;
 import com.imaginea.training.crawler.parser.Parser;
 
 public class CrawlerThread implements Runnable {
+	
 	private static final Logger logger = LoggerFactory.getLogger(CrawlerThread.class);
 
 	private Crawler crawler;
@@ -74,7 +75,6 @@ public class CrawlerThread implements Runnable {
 	public void run() {
 		init();
 		processPage();
-		logger.info("CRAWLER THREAD RUN END");
 	}
 	
 	/**
@@ -125,7 +125,7 @@ public class CrawlerThread implements Runnable {
 								List<HtmlElement> th_pagesElements = msglistElement.getElementsByAttribute(Constant.TH, Constant.CLASS, Constant.PAGES);
 								HtmlElement th_pageElement = th_pagesElements.get(0);
 								HtmlElement anchor_nextNode = (HtmlElement)th_pageElement.getLastElementChild();
-								
+
 								if(anchor_nextNode != null && anchor_nextNode.getNodeName().equals(Constant.TAG_A) && anchor_nextNode.asText().contains(Constant.NEXT)) {
 									msglistElement = extractListOfEmailsFromPage(anchor_nextNode, year, month);
 								} else {
@@ -163,6 +163,7 @@ public class CrawlerThread implements Runnable {
 		try {
 			HtmlAnchor anchor = (HtmlAnchor) anchor_monthNode;
 			HtmlPage monthResponse = null;
+			
 			if(controller.getNetUtil().isInternetReachable()) {
 				monthResponse = anchor.click();
 				HtmlElement result = monthResponse.getHtmlElementById(Constant.MSGLIST);
@@ -191,23 +192,7 @@ public class CrawlerThread implements Runnable {
 									}
 								}
 							} else {
-								while(true && !crawler.isShutdown()) {
-									logger.info("extractListOfEmailsFromPage() FOR");
-									if(controller.getNetUtil().isInternetReachable()) {
-										crawler.setM_elapsed(0);
-										break;
-									} else {
-										synchronized (this) {
-											if(crawler.getM_elapsed() == crawler.getM_length()) {
-												shutdown();
-											} else {
-												logger.info("SLEEP {}", new Date());
-												Thread.sleep(Config.SLEEP_INTERVAL);
-												crawler.setM_elapsed(crawler.getM_elapsed() + Config.SLEEP_INTERVAL);	
-											}	
-										}
-									}
-								}
+								handleShutdown();
 							}
 						}
 					}
@@ -216,29 +201,11 @@ public class CrawlerThread implements Runnable {
 			} else {
 				// might not require
 				logger.info("extractListOfEmailsFromPage - Not Reachable");
-				shutdown();
+				storeCrawlersData();
 			}
 		} catch (Exception e) {
 			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
-				while(true && !crawler.isShutdown()) {
-					logger.info("extractListOfEmailsFromPage() FOR");
-					if(controller.getNetUtil().isInternetReachable()) {
-						crawler.setM_elapsed(0);
-						break;
-					} else {
-						try {
-							synchronized (this) {
-								if(crawler.getM_elapsed() == crawler.getM_length()) {
-									shutdown();
-								} else {
-									logger.info("SLEEP {}", new Date());
-									Thread.sleep(Config.SLEEP_INTERVAL);
-									crawler.setM_elapsed(crawler.getM_elapsed() + Config.SLEEP_INTERVAL);	
-								}	
-							}
-						} catch (InterruptedException e1) {}
-					}
-				}
+				handleShutdown();
 			} else {
 				logger.error("extract list of emails failed", e);
 				throw new CrawlException(e);
@@ -247,15 +214,6 @@ public class CrawlerThread implements Runnable {
 		return null;
 	}
 	
-	private void shutdown() {
-		if(!crawler.getShutdownMap().containsKey(this.name)) {
-			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, this.name, Config.STATE_RUNNING + Constant.SPACE + String.valueOf(currentMsgCount));
-			crawler.getShutdownMap().put(this.name, true);	
-			crawler.setShutdown(true);
-			logger.info("Shutdown CrawlerThread"); 
-		}
-	}
-
 	/**
 	 * Read emails
 	 * @param tdElements
@@ -290,56 +248,59 @@ public class CrawlerThread implements Runnable {
 						this.totalMsgCount -= 1;
 					} else {
 						logger.info("extractEmailContent - Not Reachable");
-						while(true && !crawler.isShutdown()) {
-							logger.info("extractEmailContent() FOR");
-							if(controller.getNetUtil().isInternetReachable()) {
-								crawler.setM_elapsed(0);
-								break;
-							} else {
-								synchronized (this) {
-									if(crawler.getM_elapsed() == crawler.getM_length()) {
-										shutdown();
-									} else {
-										logger.info("SLEEP {}", new Date());
-										Thread.sleep(Config.SLEEP_INTERVAL);
-										crawler.setM_elapsed(crawler.getM_elapsed() + Config.SLEEP_INTERVAL);	
-									}	
-								}
-							}
-						}
+						handleShutdown();
 					}
 				} else {
-					shutdown();
+					storeCrawlersData();
 				}
 			}	
 		} catch (Exception e) {
 			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
-				while(true && !crawler.isShutdown()) {
-					if(controller.getNetUtil().isInternetReachable()) {
-						crawler.setM_elapsed(0);
-						break;
-					} else {
-						try {
-							synchronized (this) {
-								if(crawler.getM_elapsed() == crawler.getM_length()) {
-									shutdown();
-								} else {
-									logger.info("SLEEP {}", new Date());
-									Thread.sleep(Config.SLEEP_INTERVAL);
-									crawler.setM_elapsed(crawler.getM_elapsed() + Config.SLEEP_INTERVAL);	
-								}	
-							}
-						} catch (InterruptedException e1) {}  
-					}
-				}
+				handleShutdown();
 				if(crawler.isShutdown()) {
-					shutdown();
+					storeCrawlersData();
 				}
 			} else {
 				logger.error("extract email content failed", e);
 				throw new CrawlException(e);
 			}
 		} 
+	}
+
+	/**
+	 * Handle shutdown process
+	 */
+	private void handleShutdown() {
+		while(true && !crawler.isShutdown()) {
+			if(controller.getNetUtil().isInternetReachable()) {
+				crawler.setM_elapsed(0);
+				break;
+			} else {
+				try {
+					synchronized (this) {
+						if(crawler.getM_elapsed() == crawler.getM_length()) {
+							storeCrawlersData();
+						} else {
+							logger.info("SLEEP {}", new Date());
+							Thread.sleep(Config.SLEEP_INTERVAL);
+							crawler.setM_elapsed(crawler.getM_elapsed() + Config.SLEEP_INTERVAL);	
+						}	
+					}
+				} catch (InterruptedException e1) {}  
+			}
+		}
+	}
+	
+	/**
+	 * Save the crawler threads information to file for resume operation
+	 */
+	private void storeCrawlersData() {
+		if(!crawler.getShutdownMap().containsKey(this.name)) {
+			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, this.name, Config.STATE_RUNNING + Constant.SPACE + String.valueOf(currentMsgCount));
+			crawler.getShutdownMap().put(this.name, true);	
+			crawler.setShutdown(true);
+			logger.info("Shutdown CrawlerThread"); 
+		}
 	}
 
 	public int getCurrentMsgCount() {

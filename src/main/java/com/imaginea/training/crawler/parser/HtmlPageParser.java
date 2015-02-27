@@ -85,7 +85,6 @@ public class HtmlPageParser implements Parser {
 			}
 		} catch (Exception e) { 
 			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
-				System.out.println("GOT IT... GOT IT...getPage");
 				if(!netUtil.isInternetReachable()) {
 					logger.info("do something in  getPage");
 				}
