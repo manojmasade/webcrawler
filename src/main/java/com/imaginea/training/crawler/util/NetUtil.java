@@ -22,8 +22,10 @@ public class NetUtil implements INetUtil {
 				socket = new Socket("java.sun.com", 80);	
 			}
 		    reachable = true;
-		} catch (UnknownHostException e) { 
-		} catch (IOException e) { 
+		} catch (UnknownHostException e) {
+			logger.error("Internet not reachable", e);
+		} catch (IOException e) {
+			logger.error("Internet not reachable", e);
 		} finally {            
 		    if (socket != null) try { socket.close(); } catch(IOException e) {}
 		}

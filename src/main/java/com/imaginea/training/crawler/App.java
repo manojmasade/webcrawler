@@ -22,7 +22,8 @@ public class App {
     	
     	String years[] = { "2014" };
     	
-    	Config.setRunSafeMode(true); 
+    	// Safemode: true(connection always exist), false(check for connection existence)
+    	Config.setRunSafeMode(false); 
 
     	for (int i = 0; i < years.length; i++) {
         	Crawler crawler = new Crawler(years[i]);

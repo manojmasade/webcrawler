@@ -3,6 +3,11 @@ package com.imaginea.training.crawler.core;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 
+ * @author manojm
+ *
+ */
 public class CrawlMonitor implements Runnable {
 	
 	private static final Logger logger = LoggerFactory.getLogger(CrawlMonitor.class);
@@ -20,7 +25,7 @@ public class CrawlMonitor implements Runnable {
 				crawler.setExit(true);
 			}
 		}
-		logger.info("Crawling process exiting status for months, Completed:{}, Shutdown:{}", crawler.getTotalMonthsCompletedList().size(), crawler.getShutdownMap().size());
+		logger.info("Crawling process exitied. Status of months, Completed:{}, Shutdown:{}", crawler.getTotalMonthsCompletedList().size(), crawler.getShutdownMap().size());
 		System.exit(1);
 	}
 

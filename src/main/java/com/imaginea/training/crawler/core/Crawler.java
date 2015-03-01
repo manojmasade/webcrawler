@@ -1,5 +1,8 @@
 package com.imaginea.training.crawler.core;
 
+import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -9,7 +12,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
@@ -40,11 +42,13 @@ public class Crawler implements Runnable {
 	
 	private int elapsedDuration = 0;
 	
-	private int shutdownDuration = Config.SHUTDOWN_TIME;
+	private int shutdownDuration = 0;
 	
 	private boolean shutdown = false;
 	
 	private boolean exit = false;
+	
+	private Object lockApplied;
 	
 	private Map<String, Boolean> shutdownMap = new LinkedHashMap<String, Boolean>();
 	
@@ -63,12 +67,21 @@ public class Crawler implements Runnable {
 	private void init() {
 		this.parser = new HtmlPageParser();
 		this.controller = new Controller();
+		setShutdownDuration(Config.SHUTDOWN_TIME);
+	}
+	
+	private void initMonitorThread() {
+		// Monitor thread
+		CrawlMonitor crawMonitor = new CrawlMonitor(this);
+		Thread monitor = new Thread(crawMonitor);
+		monitor.start();
 	}
 
 	@Override
 	public void run() {
 		try {
 			init();
+			initMonitorThread();
 			processPage();
 		} catch (CrawlException e) {
 			logger.error("run failed", e);
@@ -115,11 +128,6 @@ public class Crawler implements Runnable {
 					Thread child = new Thread(crawlerThread);
 					child.start();
 				}
-				
-				// Monitor thread
-				CrawlMonitor crawMonitor = new CrawlMonitor(this);
-				Thread monitor = new Thread(crawMonitor);
-				monitor.start();
 
 				//webClient.closeAllWindows();
 			} else {
@@ -129,14 +137,13 @@ public class Crawler implements Runnable {
 				}
 			}
 			logger.debug("processPage end");
-		} catch (FailingHttpStatusCodeException e) {
-			logger.error("Http status code exception", e);
-			throw new CrawlException(e);
-		} catch (CrawlException e) { 
-			throw e;
 		} catch (Exception e) {
-			logger.error("processPage failed", e);
-			throw new CrawlException(e);
+			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
+				handleShutdown();
+			} else {
+				logger.error("processPage failed", e);
+				throw new CrawlException(e);
+			}
 		}
 	}
 
@@ -144,6 +151,7 @@ public class Crawler implements Runnable {
 	 * Handle shutdown process
 	 */
 	private void handleShutdown() {
+		logger.info("handleShutdown");
 		while(true && !this.isShutdown()) {
 			if(controller.getNetUtil().isInternetReachable()) {
 				this.setElapsedDuration(0);
@@ -151,23 +159,30 @@ public class Crawler implements Runnable {
 			} else {
 				try {
 					synchronized (this) {
-						if(this.getElapsedDuration() == this.getShutdownDuration()) {
-							storeCrawlersData();
+						if(this.getElapsedDuration() >= this.getShutdownDuration()) {
+							break;
 						} else {
-							logger.info("SLEEP {}", new Date());
-							Thread.sleep(Config.SLEEP_INTERVAL);
-							this.setElapsedDuration(this.getElapsedDuration() + Config.SLEEP_INTERVAL);	
+							if(null == this.getLockApplied()) {
+								this.setLockApplied(this);	
+							}
+							if(this == this.getLockApplied()) {
+								logger.info("Sleep {}", new Date());
+								Thread.sleep(Config.SLEEP_INTERVAL);
+								this.setElapsedDuration(this.getElapsedDuration() + Config.SLEEP_INTERVAL);	
+							}	
 						}	
 					}
 				} catch (InterruptedException e1) {} 
 			}
 		}
+		storeCrawlersData();
 	}
 	
 	/**
 	 * Save the crawler threads information to file for resume operation
 	 */
 	private void storeCrawlersData() {
+		logger.info("store crawlers data");
 		if(!this.getShutdownMap().containsKey(this.name)) {
 			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, this.name, Config.STATE_INITIALIZE + Constant.SPACE + String.valueOf(0));
 			this.setShutdown(true);
@@ -224,11 +239,11 @@ public class Crawler implements Runnable {
 		this.shutdownMap = shutdownMap;
 	}
 
-	public boolean isExit() {
+	public synchronized boolean isExit() {
 		return exit;
 	}
 
-	public void setExit(boolean terminate) {
+	public synchronized void setExit(boolean terminate) {
 		this.exit = terminate;
 	}
 
@@ -238,5 +253,13 @@ public class Crawler implements Runnable {
 
 	public synchronized void setTotalMonthsCompletedList(List<String> totalMonthsCompletedList) {
 		this.totalMonthsCompletedList = totalMonthsCompletedList;
+	}
+
+	public synchronized Object getLockApplied() {
+		return lockApplied;
+	}
+
+	public synchronized void setLockApplied(Object lockApplied) {
+		this.lockApplied = lockApplied;
 	}
 }
