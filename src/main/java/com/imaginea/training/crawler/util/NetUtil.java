@@ -18,7 +18,7 @@ public class NetUtil implements INetUtil {
 		Socket socket = null;
 		boolean reachable = false;
 		try {
-			if(!Config.RUN_SAFEMODE) {
+			if(!Config.runSafeMode) {
 				socket = new Socket("java.sun.com", 80);	
 			}
 		    reachable = true;
