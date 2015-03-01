@@ -5,6 +5,7 @@ import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.imaginea.training.crawler.core.Config;
 import com.imaginea.training.crawler.core.Crawler;
 
 /**
@@ -20,6 +21,8 @@ public class App {
     	System.out.println("BEGIN DATE:" + new Date());
     	
     	String years[] = { "2014" };
+    	
+    	Config.setRunSafeMode(true); 
 
     	for (int i = 0; i < years.length; i++) {
         	Crawler crawler = new Crawler(years[i]);
