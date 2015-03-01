@@ -30,7 +30,7 @@ public class Config {
 	/**
 	 * Skips internet connectivity check when safeMode is true
 	 */
-	public static final boolean RUN_SAFEMODE = true;
+	public static boolean runSafeMode;
 	
 	/**
 	 * Connection timeout in milliseconds
@@ -62,6 +62,10 @@ public class Config {
 
 	public void setResumeCrawling(boolean resumeCrawling) {
 		this.resumeCrawling = resumeCrawling;
+	}
+
+	public static void setRunSafeMode(boolean runSafeMode) {
+		Config.runSafeMode = runSafeMode;
 	}
 	
 }
