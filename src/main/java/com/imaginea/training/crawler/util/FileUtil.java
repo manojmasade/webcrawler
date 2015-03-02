@@ -1,7 +1,6 @@
 package com.imaginea.training.crawler.util;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -13,6 +12,11 @@ import com.imaginea.training.crawler.constant.Constant;
 import com.imaginea.training.crawler.core.Config;
 import com.imaginea.training.crawler.exception.CrawlException;
 
+/**
+ * 
+ * @author manojm
+ *
+ */
 public class FileUtil implements IFileUtil {
 	
 	private static final Logger logger = LoggerFactory.getLogger(FileUtil.class);
@@ -62,9 +66,9 @@ public class FileUtil implements IFileUtil {
 			byte[] contentInBytes = content.getBytes();
 			fop.write(contentInBytes);
 			fop.flush();
-			fop.close();
+			//fop.close();
 		 } catch (IOException e) {
-			 logger.error("FileUtil - creating a file failed", e);
+			 logger.error("Creating a file failed", e);
 			 throw new CrawlException(e);
 		 } finally {
 			try {
@@ -72,7 +76,7 @@ public class FileUtil implements IFileUtil {
 					fop.close();
 				}
 			} catch (IOException e) {
-				logger.error("FileUtil - closing file output stream failed", e);
+				logger.error("Closing file output stream failed", e);
 				throw new CrawlException(e);
 			}
 		 }
@@ -106,10 +110,10 @@ public class FileUtil implements IFileUtil {
 					fop.flush();
 					fop.close();
 			 	} else {
-			 		logger.info("File {} already exists", file.getPath());
+			 		logger.debug("File {} already exists", file.getPath());
 			 	}  
 		 } catch (IOException e) {
-			 logger.error("FileUtil - creating a file failed", e);
+			 logger.error("Creating a file failed", e);
 			 throw new CrawlException(e);
 		 } finally {
 			try {
@@ -117,7 +121,7 @@ public class FileUtil implements IFileUtil {
 					fop.close();
 				}
 			} catch (IOException e) {
-				logger.error("FileUtil - closing file output stream failed", e);
+				logger.error("Closing file output stream failed", e);
 				throw new CrawlException(e);
 			}
 		 }
@@ -139,7 +143,7 @@ public class FileUtil implements IFileUtil {
 			result = new String(chars);
 			reader.close();
 		 } catch (IOException e) {
-			 logger.error("FileUtil - reading contents from file {} failed", fileName, e);
+			 logger.error("Reading contents from file {} failed", fileName, e);
 			 throw new CrawlException(e);
 		 } finally {
 			try {
