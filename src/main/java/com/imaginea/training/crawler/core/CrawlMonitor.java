@@ -20,12 +20,27 @@ public class CrawlMonitor implements Runnable {
 	
 	@Override
 	public void run() {
+		
 		while (!crawler.isExit()) {
-			if(crawler.getShutdownMap().size() == 12 || crawler.getTotalMonthsCompletedList().size() == 12){
+			int shutdownThreads =  crawler.getShutdownMap().size();
+			int completedThreads = crawler.getTotalMonthsCompletedList().size();
+
+			// When all threads have completed their job
+			if(completedThreads == Config.NO_OF_MONTH_THREADS) {
+				crawler.getController().getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, Config.FILE_CRAWL, Config.STATE_COMPLETED);
+			}
+			
+			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e) {}
+			
+			logger.info("shutdownThreads:" + shutdownThreads + ", completedThreads:" + completedThreads);
+			if((shutdownThreads + completedThreads) == Config.NO_OF_MONTH_THREADS){
 				crawler.setExit(true);
 			}
 		}
-		logger.info("Crawling process exitied. Status of months, Completed:{}, Shutdown:{}", crawler.getTotalMonthsCompletedList().size(), crawler.getShutdownMap().size());
+		logger.info("Crawling process exited. Status of months, Completed:{}, Shutdown:{}", crawler.getTotalMonthsCompletedList().size(), crawler.getShutdownMap().size());
+		logger.info("Completed: {}, Shutdown: {}", crawler.getTotalMonthsCompletedList(), crawler.getShutdownMap().keySet()); 
 		System.exit(1);
 	}
 
