@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans xmlns="http://www.springframework.org/schema/beans"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
  
-<beans>
- 	
  	<bean id="app" class="com.imaginea.training.crawler.App" />
  	<bean id="fileUtil" class="com.imaginea.training.crawler.util.FileUtil" />
 	<bean id="netUtil" class="com.imaginea.training.crawler.util.NetUtil" />
@@ -14,7 +14,15 @@
  
 	<bean id="parser" class="com.imaginea.training.crawler.parser.HtmlPageParser" />
 	
+	<bean id="crawler" class="com.imaginea.training.crawler.core.Crawler" scope="prototype">
+		<constructor-arg index="0" value="name" />
+		<constructor-arg index="1" value="year" />
+		<property name="controller" ref="controller" />
+ 		<property name="parser" ref="parser" />
+	</bean>
 	
-	
+	<bean id="crawlMonitor" class="com.imaginea.training.crawler.core.CrawlMonitor" scope="prototype">
+		<constructor-arg index="0" ref="crawler"/>
+ 	</bean>
  
 </beans>

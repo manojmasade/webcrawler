@@ -12,6 +12,7 @@ import com.imaginea.training.crawler.util.NetUtil;
  *
  */
 public class Controller {
+	
 	private static final Logger logger = LoggerFactory.getLogger(Controller.class);
 
 	private FileUtil fileUtil;

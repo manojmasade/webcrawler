@@ -20,8 +20,10 @@ public class App {
 	
 	private static final String CONFIG_PATH = "classpath*:applicationContext.xml";
 	
+	private static final ApplicationContext context = new ClassPathXmlApplicationContext(CONFIG_PATH);
+	
+	
     public static void main( String[] args ) {
-    	final ApplicationContext context = new ClassPathXmlApplicationContext(CONFIG_PATH);
     	final App app = (App) context.getBean("app");
     	app.invoke();
     }
@@ -39,7 +41,7 @@ public class App {
     	
     	String years[] = { "2014" };
     	for (int i = 0; i < years.length; i++) {
-        	Crawler crawler = new Crawler(years[i]);
+    		Crawler crawler = (Crawler) context.getBean("crawler", years[i], years[i]);
         	Thread parent = new Thread(crawler);
         	parent.start();	
 		}

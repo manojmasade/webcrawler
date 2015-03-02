@@ -11,6 +11,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
@@ -35,10 +36,15 @@ public class Crawler implements Runnable {
 	private String name;
 	
 	private String year;
-			
+		
+	@Autowired
 	private Controller controller;
 	
+	@Autowired
 	private Parser parser;
+	
+	@Autowired
+	private CrawlMonitor crawlMonitor;
 	
 	private int elapsedDuration = 0;
 	
@@ -63,21 +69,19 @@ public class Crawler implements Runnable {
 		"Jun", "May", "Apr", "Mar", "Feb", "Jan"
 	};
 	
-	public Crawler(String year) {
+	public Crawler(String year, String month) {
 		this.year = year;
 		this.name = year;
 	}
 	
 	private void init() {
-		this.parser = new HtmlPageParser();
-		this.controller = new Controller();
 		setShutdownDuration(Config.SHUTDOWN_TIME);
 	}
 	
 	private void initMonitorThread() {
 		// Monitor thread
-		CrawlMonitor crawMonitor = new CrawlMonitor(this);
-		Thread monitor = new Thread(crawMonitor);
+		//CrawlMonitor crawlMonitor = new CrawlMonitor(this);
+		Thread monitor = new Thread(crawlMonitor);
 		monitor.start();
 	}
 
@@ -321,6 +325,26 @@ public class Crawler implements Runnable {
 
 	public Controller getController() {
 		return controller;
+	}
+
+	public Parser getParser() {
+		return parser;
+	}
+
+	public void setParser(Parser parser) {
+		this.parser = parser;
+	}
+
+	public void setController(Controller controller) {
+		this.controller = controller;
+	}
+
+	public CrawlMonitor getCrawlMonitor() {
+		return crawlMonitor;
+	}
+
+	public void setCrawlMonitor(CrawlMonitor crawlMonitor) {
+		this.crawlMonitor = crawlMonitor;
 	}
 	
 }

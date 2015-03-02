@@ -2,6 +2,7 @@ package com.imaginea.training.crawler.core;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * 
@@ -12,6 +13,7 @@ public class CrawlMonitor implements Runnable {
 	
 	private static final Logger logger = LoggerFactory.getLogger(CrawlMonitor.class);
 
+	@Autowired
 	private Crawler crawler;
 	
 	public CrawlMonitor(Crawler crawler) {
@@ -42,6 +44,14 @@ public class CrawlMonitor implements Runnable {
 		logger.info("Crawling process exited. Status of months, Completed:{}, Shutdown:{}", crawler.getTotalMonthsCompletedList().size(), crawler.getShutdownMap().size());
 		logger.info("Completed: {}, Shutdown: {}", crawler.getTotalMonthsCompletedList(), crawler.getShutdownMap().keySet()); 
 		System.exit(1);
+	}
+
+	public Crawler getCrawler() {
+		return crawler;
+	}
+
+	public void setCrawler(Crawler crawler) {
+		this.crawler = crawler;
 	}
 
 }
