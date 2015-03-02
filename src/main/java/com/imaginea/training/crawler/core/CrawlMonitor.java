@@ -31,10 +31,10 @@ public class CrawlMonitor implements Runnable {
 			}
 			
 			try {
-				Thread.sleep(2000);
+				Thread.sleep(5000);
 			} catch (InterruptedException e) {}
 			
-			logger.info("shutdownThreads:" + shutdownThreads + ", completedThreads:" + completedThreads);
+			logger.debug("shutdownThreads:" + shutdownThreads + ", completedThreads:" + completedThreads);
 			if((shutdownThreads + completedThreads) == Config.NO_OF_MONTH_THREADS){
 				crawler.setExit(true);
 			}

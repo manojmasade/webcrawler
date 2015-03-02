@@ -142,6 +142,8 @@ public class CrawlerThread implements Runnable {
 						}
 					}
 				}
+				// To mark the completion trace
+				handleShutdown();
 			}
 		} catch(CrawlException e) {
 			handleShutdown();
@@ -180,7 +182,7 @@ public class CrawlerThread implements Runnable {
 						if(this.totalMsgCount > 0) {
 							DomNodeList<HtmlElement> anchor_msgNodes = td_msg.getElementsByTagName(Constant.TAG_A);
 							if(anchor_msgNodes.size() > 0) {
-								logger.debug("currentMsgCount:" + this.currentMsgCount + ", totalMsgCount:" + this.totalMsgCount);
+								logger.debug("Month: {}, CurrentMsgCount: {}, TotalMsgCount: {}", month, this.currentMsgCount, this.totalMsgCount);
 								HtmlAnchor anchor_msgNode = (HtmlAnchor) anchor_msgNodes.get(0);
 								extractEmailContent(anchor_msgNode, year, month);
 							}

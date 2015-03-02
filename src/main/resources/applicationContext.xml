@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+ 
+<beans>
+ 	
+ 	<bean id="app" class="com.imaginea.training.crawler.App" />
+ 	<bean id="fileUtil" class="com.imaginea.training.crawler.util.FileUtil" />
+	<bean id="netUtil" class="com.imaginea.training.crawler.util.NetUtil" />
+	
+ 	<bean id="controller" class="com.imaginea.training.crawler.core.Controller">
+ 		<property name="fileUtil" ref="fileUtil" />
+ 		<property name="netUtil" ref="netUtil" />
+ 	</bean>
+ 
+	<bean id="parser" class="com.imaginea.training.crawler.parser.HtmlPageParser" />
+	
+	
+	
+ 
+</beans>
