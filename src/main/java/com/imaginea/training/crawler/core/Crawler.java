@@ -12,6 +12,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ch.qos.logback.core.util.FileUtil;
+
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
@@ -52,6 +54,8 @@ public class Crawler implements Runnable {
 	
 	private Map<String, Boolean> shutdownMap = new LinkedHashMap<String, Boolean>();
 	
+	private Map<String, Integer> monthCurrentMsgCountMap = new LinkedHashMap<String, Integer>();
+	
 	private List<String> totalMonthsCompletedList = new ArrayList<String>();
 
 	private String months[] = {
@@ -82,9 +86,38 @@ public class Crawler implements Runnable {
 		try {
 			init();
 			initMonitorThread();
-			processPage();
+			initCrawlData();
+			processCrawl();
 		} catch (CrawlException e) {
 			logger.error("run failed", e);
+		}
+	}
+
+	/**
+	 * Initialize crawl data with information from disk and fill up map for use by month threads 
+	 */
+	private void initCrawlData() {
+		boolean initializeAllThreads = false;
+		String crawl_monthMsgCount = null;
+		int msgCount = 0;
+		
+		if(Config.isResumeCrawling()) {
+			String crawlStatus = controller.getFileUtil().getFileContent(Config.DIR_DOWNLOAD_EMAILS, Config.FILE_CRAWL);
+			if(crawlStatus != null && crawlStatus.equalsIgnoreCase(Config.STATE_RUNNING)) {
+				initializeAllThreads = true;
+			}
+		}
+		
+		for (int i = 0; i < months.length; i++) {
+			if(initializeAllThreads) {
+				crawl_monthMsgCount = controller.getFileUtil().getFileContent(Config.DIR_DOWNLOAD_EMAILS, months[i]);
+				if(crawl_monthMsgCount != null) {
+					msgCount = Integer.parseInt(crawl_monthMsgCount);
+					monthCurrentMsgCountMap.put(months[i], msgCount);
+				}	
+			} else {
+				monthCurrentMsgCountMap.put(months[i], msgCount);
+			}
 		}
 	}
 
@@ -92,7 +125,7 @@ public class Crawler implements Runnable {
 	 * Process page for the year
 	 * @throws CrawlException
 	 */
-	private void processPage() throws CrawlException {
+	private void processCrawl() throws CrawlException {
 		logger.debug("processPage begin");
 		
 		try {
@@ -125,6 +158,8 @@ public class Crawler implements Runnable {
 					CrawlerThread crawlerThread = new CrawlerThread(this, parser, controller, month, year);
 		        	crawlerThread.setName(month);
 		        	crawlerThread.setTotalMsgCount(Integer.parseInt(msgCount));
+		        	System.out.println("MONTH: " + month + ", COUNT: " +  monthCurrentMsgCountMap.get(month));
+		        	crawlerThread.setCurrentMsgCount(monthCurrentMsgCountMap.get(month));
 					Thread child = new Thread(crawlerThread);
 					child.start();
 				}
@@ -133,7 +168,7 @@ public class Crawler implements Runnable {
 			} else {
 				handleShutdown();
 				if(controller.getNetUtil().isInternetReachable()) {
-					processPage();	
+					processCrawl();	
 				}
 			}
 			logger.debug("processPage end");
@@ -184,7 +219,7 @@ public class Crawler implements Runnable {
 	private void storeCrawlersData() {
 		logger.info("store crawlers data");
 		if(!this.getShutdownMap().containsKey(this.name)) {
-			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, this.name, Config.STATE_INITIALIZE + Constant.SPACE + String.valueOf(0));
+			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, Config.FILE_CRAWL, Config.STATE_INITIALIZE);
 			this.setShutdown(true);
 			this.setExit(true);
 			logger.info("Shutdown Crawler"); 
@@ -262,4 +297,13 @@ public class Crawler implements Runnable {
 	public synchronized void setLockApplied(Object lockApplied) {
 		this.lockApplied = lockApplied;
 	}
+
+	public Map<String, Integer> getMonthCurrentMsgCountMap() {
+		return monthCurrentMsgCountMap;
+	}
+
+	public void setMonthCurrentMsgCountMap(Map<String, Integer> monthCurrentMsgCountMap) {
+		this.monthCurrentMsgCountMap = monthCurrentMsgCountMap;
+	}
+	
 }

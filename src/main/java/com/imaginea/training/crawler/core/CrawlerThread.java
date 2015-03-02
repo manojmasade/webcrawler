@@ -72,7 +72,7 @@ public class CrawlerThread implements Runnable {
 	@Override
 	public void run() {
 		init();
-		processPage();
+		processCrawl();
 	}
 	
 	/**
@@ -101,7 +101,7 @@ public class CrawlerThread implements Runnable {
 	 * Process page for the month
 	 * @throws CrawlException
 	 */
-	public void processPage() throws CrawlException {
+	public void processCrawl() throws CrawlException {
 		logger.debug("processPage begin");
 		
 		try {
@@ -113,7 +113,7 @@ public class CrawlerThread implements Runnable {
 						
 						// Get the list of emails from 1st page
 						long startTime = System.currentTimeMillis();
-						currentMsgCount = 0;
+						//currentMsgCount = 0;
 						HtmlElement msglistElement = extractListOfEmailsFromPage(anchor_monthNode, year, month);	
 						boolean isNextPageAvailable = true;
 						
@@ -170,26 +170,21 @@ public class CrawlerThread implements Runnable {
 				HtmlTableBody tbody_msg = tbody_msgslist.get(0);
 				List<HtmlTableRow> tr_msgs = tbody_msg.getRows();
 
-				for (int i = 0; (i < tr_msgs.size() && !crawler.isShutdown()); i++) {
+				for (int i = currentMsgCount; (i < tr_msgs.size() && !crawler.isShutdown()); i++) {
 					final HtmlTableRow tr_msg = tr_msgs.get(i);
 					List<HtmlTableCell> td_msgs = tr_msg.getCells();
-					  
-					for (int j = 0; (j < td_msgs.size() && !crawler.isShutdown()); j++) {
-						final HtmlTableCell td_msg = td_msgs.get(j); 
-						
-						if(!crawler.isShutdown()) {
-							if(this.totalMsgCount > 0) {
-								DomAttr td_msg_class = td_msg.getAttributeNode(Constant.CLASS);
-								if(td_msg_class.getNodeValue().equals(Constant.SUBJECT)) {
-									DomNodeList<HtmlElement> anchor_msgNodes = td_msg.getElementsByTagName(Constant.TAG_A);
-									if(anchor_msgNodes.size() > 0) {
-										logger.info("currentMsgCount:" + currentMsgCount + ", this.totalMsgCount:" + this.totalMsgCount); 
-										extractEmailContent(anchor_msgNodes, year, month);
-									}
-								}
-							} else {
-								handleShutdown();
+					final HtmlTableCell td_msg = td_msgs.get(1); 
+
+					if(!crawler.isShutdown()) {
+						if(this.totalMsgCount > 0) {
+							DomNodeList<HtmlElement> anchor_msgNodes = td_msg.getElementsByTagName(Constant.TAG_A);
+							if(anchor_msgNodes.size() > 0) {
+								logger.info("currentMsgCount:" + currentMsgCount + ", this.totalMsgCount:" + this.totalMsgCount);
+								HtmlAnchor anchor_msgNode = (HtmlAnchor) anchor_msgNodes.get(0);
+								extractEmailContent(anchor_msgNode, year, month);
 							}
+						} else {
+							handleShutdown();
 						}
 					}
 				}
@@ -215,36 +210,31 @@ public class CrawlerThread implements Runnable {
 	 * @param tdElements
 	 * @throws IOException
 	 */
-	public void extractEmailContent(DomNodeList<HtmlElement> emailAnchorNodes, String year, String month) throws CrawlException {
+	public void extractEmailContent(HtmlAnchor emailAnchorNode, String year, String month) throws CrawlException {
 		try {
 			String emailAddress = null;
 			String emailContent = null;
-			HtmlAnchor anchor = null; 
 			HtmlPage emailResponse = null;
 			StringBuffer fileNameBuffer = null;
 			String fileName = null;
 			String emailSentDate = null;
+			emailAddress = emailAnchorNode.getHrefAttribute();
 			
-			for (HtmlElement emailAnchor : emailAnchorNodes) {
-				anchor = (HtmlAnchor) emailAnchor;
-				emailAddress = anchor.getHrefAttribute();
+			if(!crawler.isShutdown() && controller.getNetUtil().isInternetReachable()) {
+				emailResponse = emailAnchorNode.click();
+				emailContent = emailResponse.asXml();
+				emailSentDate = parser.parseEmailSentDate(emailResponse);
 				
-				if(!crawler.isShutdown() && controller.getNetUtil().isInternetReachable()) {
-						emailResponse = anchor.click();
-						emailContent = emailResponse.asXml();
-						emailSentDate = parser.parseEmailSentDate(emailResponse);
-						
-						// Write email content to a file: <emailAddress>_<emailSentDate>
-						fileNameBuffer = new StringBuffer();
-						fileName = fileNameBuffer.append(emailAddress).append(Constant.UNDERSCORE).append(emailSentDate).toString();
-						controller.getFileUtil().downloadEmail(fileName, emailContent, year, month);
-						logger.debug("Email content: " + emailContent);
-						this.currentMsgCount += 1;	
-						this.totalMsgCount -= 1;
-				} else {
-					handleShutdown();
-				}
-			}	
+				// Write email content to a file: <emailAddress>_<emailSentDate>
+				fileNameBuffer = new StringBuffer();
+				fileName = fileNameBuffer.append(emailAddress).append(Constant.UNDERSCORE).append(emailSentDate).toString();
+				controller.getFileUtil().downloadEmail(fileName, emailContent, year, month);
+				logger.debug("Email content: " + emailContent);
+				this.currentMsgCount += 1;	
+				this.totalMsgCount -= 1;
+			} else {
+				handleShutdown();
+			}
 		} catch (Exception e) {
 			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
 				handleShutdown();
@@ -292,7 +282,8 @@ public class CrawlerThread implements Runnable {
 	private void storeCrawlersData() {
 		logger.info("storeCrawlersData");
 		if(!crawler.getShutdownMap().containsKey(this.name)) {
-			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, this.name, Config.STATE_RUNNING + Constant.SPACE + String.valueOf(currentMsgCount));
+			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, Config.FILE_CRAWL, Config.STATE_RUNNING);
+			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, this.name, String.valueOf(currentMsgCount));
 			crawler.getShutdownMap().put(this.name, true);	
 			crawler.setShutdown(true);
 			logger.info("Shutdown CrawlerThread"); 

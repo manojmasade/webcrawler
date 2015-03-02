@@ -1,7 +1,9 @@
 package com.imaginea.training.crawler.util;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 
 import org.slf4j.Logger;
@@ -43,7 +45,6 @@ public class FileUtil implements IFileUtil {
 			throws CrawlException {
 		File file = null;
 		FileOutputStream fop = null;
-		dir = Config.DIR_DOWNLOAD_EMAILS;
 		
 		try {
 			File fileDir = new File(dir);
@@ -54,16 +55,14 @@ public class FileUtil implements IFileUtil {
 		    
 			file = new File(fileDir, fileName + Config.FILE_EXTENSION);
 			if(!file.exists()) {
-		 		logger.debug("Creating a new file as it does not exist : " + fileName);
+		 		logger.debug("Creating a file {} as it does not exist", file.getPath());
 				file.createNewFile();
-				fop = new FileOutputStream(file);
-				byte[] contentInBytes = content.getBytes();
-				fop.write(contentInBytes);
-				fop.flush();
-				fop.close();
-		 	} else {
-		 		logger.info("File {} already exists", file.getPath());
-		 	}  
+			}
+			fop = new FileOutputStream(file);
+			byte[] contentInBytes = content.getBytes();
+			fop.write(contentInBytes);
+			fop.flush();
+			fop.close();
 		 } catch (IOException e) {
 			 logger.error("FileUtil - creating a file failed", e);
 			 throw new CrawlException(e);
@@ -124,4 +123,34 @@ public class FileUtil implements IFileUtil {
 		 }
 	}
 
+	
+	@Override
+	public String getFileContent(String dir, String fileName) throws CrawlException {
+		File file = null;
+		String result = null;
+		FileReader reader = null;
+		
+		try {
+			File fileDir = new File(dir);
+			file = new File(fileDir, fileName + Config.FILE_EXTENSION);
+			reader = new FileReader(file);
+			char[] chars = new char[(int) file.length()];
+			reader.read(chars);
+			result = new String(chars);
+			reader.close();
+		 } catch (IOException e) {
+			 logger.error("FileUtil - reading contents from file {} failed", fileName, e);
+			 throw new CrawlException(e);
+		 } finally {
+			try {
+				if (reader != null) {
+					reader.close();
+				}
+			} catch (IOException e) {
+				logger.error("Closing file reader failed", e);
+				throw new CrawlException(e);
+			}
+		 }
+		return result;
+	}
 }

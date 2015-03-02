@@ -13,18 +13,18 @@ import com.imaginea.training.crawler.core.Crawler;
  *
  */
 public class App {
+	
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
 	
     public static void main( String[] args ) {
     	logger.info("Java Crawler -- Download emails for specified year" );
     	long processStartTime = System.currentTimeMillis();
-    	System.out.println("BEGIN DATE:" + new Date());
+    	logger.info("Begin Date:" + new Date());
+    	
+    	Config.setRunSafeMode(true); 
+    	Config.setResumeCrawling(true);
     	
     	String years[] = { "2014" };
-    	
-    	// Safemode: true(connection always exist), false(check for connection existence)
-    	Config.setRunSafeMode(false); 
-
     	for (int i = 0; i < years.length; i++) {
         	Crawler crawler = new Crawler(years[i]);
         	Thread parent = new Thread(crawler);

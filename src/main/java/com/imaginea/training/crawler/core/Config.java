@@ -15,6 +15,8 @@ public class Config {
 	public static final String DIR_DOWNLOAD_EMAILS = "tmp";
 	
 	public static final String FILE_EXTENSION = ".html";
+	
+	public static final String FILE_CRAWL = "crawl";
 
 	/**
 	 * The folder will be used by crawler for storing the snapshot of crawl data. 
@@ -25,7 +27,7 @@ public class Config {
 	/**
 	 * Resume crawling after connection is available
 	 */
-	private boolean resumeCrawling = false;
+	public static boolean resumeCrawling = false;
 	
 	/**
 	 * Skips internet connectivity check when safeMode is true
@@ -56,16 +58,16 @@ public class Config {
 		this.crawlStorageWatchFolder = crawlStorageWatchFolder;
 	}
 
-	public boolean isResumeCrawling() {
+	public static void setRunSafeMode(boolean runSafeMode) {
+		Config.runSafeMode = runSafeMode;
+	}
+
+	public static boolean isResumeCrawling() {
 		return resumeCrawling;
 	}
 
-	public void setResumeCrawling(boolean resumeCrawling) {
-		this.resumeCrawling = resumeCrawling;
-	}
-
-	public static void setRunSafeMode(boolean runSafeMode) {
-		Config.runSafeMode = runSafeMode;
+	public static void setResumeCrawling(boolean resumeCrawling) {
+		Config.resumeCrawling = resumeCrawling;
 	}
 	
 }

@@ -8,4 +8,6 @@ public interface IFileUtil {
 	
 	public void createFile(String dir, String fileName, String content) throws CrawlException;
 	
+	public String getFileContent(String dir, String fileName) throws CrawlException;
+	
 }
