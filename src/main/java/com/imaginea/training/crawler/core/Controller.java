@@ -14,9 +14,9 @@ import com.imaginea.training.crawler.util.NetUtil;
 public class Controller {
 	private static final Logger logger = LoggerFactory.getLogger(Controller.class);
 
-	private FileUtil fileUtil = null;
+	private FileUtil fileUtil;
 	
-	private NetUtil netUtil = null;
+	private NetUtil netUtil;
 	
 	public Controller() {
 		fileUtil = new FileUtil();
@@ -29,6 +29,14 @@ public class Controller {
 
 	public NetUtil getNetUtil() {
 		return netUtil;
+	}
+
+	public void setFileUtil(FileUtil fileUtil) {
+		this.fileUtil = fileUtil;
+	}
+
+	public void setNetUtil(NetUtil netUtil) {
+		this.netUtil = netUtil;
 	}
 	
 }
