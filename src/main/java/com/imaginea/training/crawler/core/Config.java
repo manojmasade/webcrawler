@@ -41,13 +41,17 @@ public class Config {
 	
 	public static final int JAVASCRIPT_TIMEOUT = 3000;
 	
-	public static final int SHUTDOWN_TIME = 5000;
+	public static final int SHUTDOWN_TIME = 10000;
 	
 	public static final int SLEEP_INTERVAL = 1000;
 	
 	public static final String STATE_INITIALIZE = "INITIALIZE";
 	
 	public static final String STATE_RUNNING = "RUNNING";
+	
+	public static final String STATE_COMPLETED = "COMPLETED";
+	
+	public static final int NO_OF_MONTH_THREADS = 12;
 	
 
 	public String getCrawlStorageFolder() {
