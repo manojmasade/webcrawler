@@ -22,7 +22,7 @@ public class App {
     	logger.info("Begin Date:" + new Date());
     	
     	Config.setRunSafeMode(true); 
-    	Config.setResumeCrawling(true);
+    	Config.setResumeCrawling(false);
     	
     	String years[] = { "2014" };
     	for (int i = 0; i < years.length; i++) {

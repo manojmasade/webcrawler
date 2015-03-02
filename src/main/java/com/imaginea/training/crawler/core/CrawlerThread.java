@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.html.DomAttr;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
@@ -40,6 +39,8 @@ public class CrawlerThread implements Runnable {
 	
 	private int currentMsgCount = 0;
 	
+	private int beginCrawlIndex = 0;
+	
 	private String name;
 	
 	private String year;
@@ -66,7 +67,6 @@ public class CrawlerThread implements Runnable {
 		this.webClient = new WebClient();
 		this.webClient.getOptions().setTimeout(Config.CONNECTION_TIMEOUT);
 		webClient.setJavaScriptTimeout(Config.JAVASCRIPT_TIMEOUT);
-		this.page = parser.getPage(webClient);
 	}
 	
 	@Override
@@ -102,9 +102,9 @@ public class CrawlerThread implements Runnable {
 	 * @throws CrawlException
 	 */
 	public void processCrawl() throws CrawlException {
-		logger.debug("processPage begin");
 		
 		try {
+			this.page = parser.getPage(webClient);
 			HtmlTableRow tr_monthNode = getTableRowForMonth();
 			if(tr_monthNode != null) {
 				DomNodeList<HtmlElement> anchor_monthNodes = tr_monthNode.getElementsByTagName(Constant.TAG_A);
@@ -113,7 +113,7 @@ public class CrawlerThread implements Runnable {
 						
 						// Get the list of emails from 1st page
 						long startTime = System.currentTimeMillis();
-						//currentMsgCount = 0;
+						beginCrawlIndex = this.currentMsgCount;
 						HtmlElement msglistElement = extractListOfEmailsFromPage(anchor_monthNode, year, month);	
 						boolean isNextPageAvailable = true;
 						
@@ -123,19 +123,19 @@ public class CrawlerThread implements Runnable {
 								List<HtmlElement> th_pagesElements = msglistElement.getElementsByAttribute(Constant.TH, Constant.CLASS, Constant.PAGES);
 								HtmlElement th_pageElement = th_pagesElements.get(0);
 								HtmlElement anchor_nextNode = (HtmlElement)th_pageElement.getLastElementChild();
-
+								
 								if(anchor_nextNode != null && anchor_nextNode.getNodeName().equals(Constant.TAG_A) && anchor_nextNode.asText().contains(Constant.NEXT)) {
+									this.beginCrawlIndex = 0;
 									msglistElement = extractListOfEmailsFromPage(anchor_nextNode, year, month);
 								} else {
 									isNextPageAvailable = false;	
 								}	
 							}
 						} 
-
+						
 						// Log information
 						if(logger.isInfoEnabled() || logger.isDebugEnabled()) {
-							crawler.getTotalMonthsCompletedList().add(month);
-							logger.info("{} {} emails downloaded: {}" , month, year, currentMsgCount);
+							logger.info("{} {} emails downloaded: {}" , month, year, this.currentMsgCount);
 							long endTime = System.currentTimeMillis();
 							logger.debug("Duration - Seconds : " + (endTime-startTime)/1000 + ", Minutes: " + (endTime-startTime)/(1000*60)); 
 							logger.debug("--------");
@@ -144,6 +144,7 @@ public class CrawlerThread implements Runnable {
 				}
 			}
 		} catch(CrawlException e) {
+			handleShutdown();
 			throw e;
 		} catch(Exception e) {
 			logger.error("processPage failed", e);
@@ -169,8 +170,8 @@ public class CrawlerThread implements Runnable {
 				List<HtmlTableBody> tbody_msgslist = table_msgList.getBodies();
 				HtmlTableBody tbody_msg = tbody_msgslist.get(0);
 				List<HtmlTableRow> tr_msgs = tbody_msg.getRows();
-
-				for (int i = currentMsgCount; (i < tr_msgs.size() && !crawler.isShutdown()); i++) {
+				
+				for (int i = this.beginCrawlIndex; (i < tr_msgs.size() && !crawler.isShutdown()); i++) {
 					final HtmlTableRow tr_msg = tr_msgs.get(i);
 					List<HtmlTableCell> td_msgs = tr_msg.getCells();
 					final HtmlTableCell td_msg = td_msgs.get(1); 
@@ -179,7 +180,7 @@ public class CrawlerThread implements Runnable {
 						if(this.totalMsgCount > 0) {
 							DomNodeList<HtmlElement> anchor_msgNodes = td_msg.getElementsByTagName(Constant.TAG_A);
 							if(anchor_msgNodes.size() > 0) {
-								logger.info("currentMsgCount:" + currentMsgCount + ", this.totalMsgCount:" + this.totalMsgCount);
+								logger.debug("currentMsgCount:" + this.currentMsgCount + ", totalMsgCount:" + this.totalMsgCount);
 								HtmlAnchor anchor_msgNode = (HtmlAnchor) anchor_msgNodes.get(0);
 								extractEmailContent(anchor_msgNode, year, month);
 							}
@@ -189,10 +190,6 @@ public class CrawlerThread implements Runnable {
 					}
 				}
 				return result;
-			} else {
-				// might not require
-				logger.info("extractListOfEmailsFromPage - Not Reachable");
-				//handleShutdown();
 			}
 		} catch (Exception e) {
 			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
@@ -249,7 +246,8 @@ public class CrawlerThread implements Runnable {
 	 * Handle shutdown process
 	 */
 	private void handleShutdown() {
-		logger.info("handleShutdown");
+		logger.debug("handleShutdown {}", month);
+		
 		while(true && !crawler.isShutdown()) {
 			if(controller.getNetUtil().isInternetReachable()) {
 				crawler.setElapsedDuration(0);
@@ -280,14 +278,21 @@ public class CrawlerThread implements Runnable {
 	 * Save the crawler threads information to file for resume operation
 	 */
 	private void storeCrawlersData() {
-		logger.info("storeCrawlersData");
-		if(!crawler.getShutdownMap().containsKey(this.name)) {
-			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, Config.FILE_CRAWL, Config.STATE_RUNNING);
-			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, this.name, String.valueOf(currentMsgCount));
-			crawler.getShutdownMap().put(this.name, true);	
-			crawler.setShutdown(true);
-			logger.info("Shutdown CrawlerThread"); 
-		}
+		logger.debug("storeCrawlersData");
+		
+		if(this.totalMsgCount == 0) {
+			if(!crawler.getTotalMonthsCompletedList().contains(month)) {
+				crawler.getTotalMonthsCompletedList().add(month);	
+			}
+		} else {
+			if(!crawler.getShutdownMap().containsKey(this.name)) {
+				crawler.getShutdownMap().put(this.name, true);
+				crawler.setShutdown(true);
+				logger.info("Shutdown CrawlerThread");
+			}
+		}	
+		controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, Config.FILE_CRAWL, Config.STATE_RUNNING);
+		controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, this.name, String.valueOf(currentMsgCount));
 	}
 
 	public int getCurrentMsgCount() {
