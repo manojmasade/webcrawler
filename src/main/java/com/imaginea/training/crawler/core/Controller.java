@@ -14,23 +14,11 @@ import com.imaginea.training.crawler.util.NetUtil;
 public class Controller {
 	private static final Logger logger = LoggerFactory.getLogger(Controller.class);
 
-	/**
-	 * Is crawling finished
-	 */
-	protected boolean finished;
-	
-	/**
-	 * Is crawler shutdown abnormally as connection is not available
-	 */
-	//protected boolean shuttingDown;
-	
 	private FileUtil fileUtil = null;
 	
 	private NetUtil netUtil = null;
 	
 	public Controller() {
-		finished = false;
-		//shuttingDown = false;
 		fileUtil = new FileUtil();
 		netUtil = new NetUtil();
 	}
