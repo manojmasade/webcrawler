@@ -19,11 +19,6 @@ public class Controller {
 	
 	private NetUtil netUtil;
 	
-	public Controller() {
-		fileUtil = new FileUtil();
-		netUtil = new NetUtil();
-	}
-
 	public FileUtil getFileUtil() {
 		return fileUtil;
 	}
