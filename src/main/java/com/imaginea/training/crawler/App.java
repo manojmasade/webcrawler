@@ -40,7 +40,7 @@ public class App {
     	
     	String years[] = { "2014" };
     	for (int i = 0; i < years.length; i++) {
-    		Crawler crawler = (Crawler) context.getBean("crawler", years[i], years[i]);
+    		Crawler crawler = (Crawler) context.getBean("crawler", years[i]);
         	Thread yearThread = new Thread(crawler);
         	yearThread.start();	
 		}
