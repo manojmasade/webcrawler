@@ -15,8 +15,8 @@ xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.sprin
 	<bean id="parser" class="com.imaginea.training.crawler.parser.HtmlPageParser" />
 	
 	<bean id="crawler" class="com.imaginea.training.crawler.core.Crawler" scope="prototype">
-		<constructor-arg index="0" value="name" />
-		<constructor-arg index="1" value="year" />
+		<constructor-arg index="0" value="" />
+		<constructor-arg index="1" value="" />
 		<property name="controller" ref="controller" />
  		<property name="parser" ref="parser" />
 	</bean>
