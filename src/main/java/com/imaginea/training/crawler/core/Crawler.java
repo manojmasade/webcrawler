@@ -21,7 +21,6 @@ import com.gargoylesoftware.htmlunit.html.HtmlTableBody;
 import com.gargoylesoftware.htmlunit.html.HtmlTableRow;
 import com.imaginea.training.crawler.constant.Constant;
 import com.imaginea.training.crawler.exception.CrawlException;
-import com.imaginea.training.crawler.parser.HtmlPageParser;
 import com.imaginea.training.crawler.parser.Parser;
 
 /**
@@ -68,9 +67,9 @@ public class Crawler implements Runnable {
 		"Jun", "May", "Apr", "Mar", "Feb", "Jan"
 	};
 	
-	public Crawler(String year, String name) {
+	public Crawler(String year) {
 		this.year = year;
-		this.name = name;
+		this.name = year;
 	}
 	
 	private void init() {
