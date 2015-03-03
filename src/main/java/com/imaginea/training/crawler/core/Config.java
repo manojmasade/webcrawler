@@ -37,7 +37,7 @@ public class Config {
 	/**
 	 * Connection timeout in milliseconds
 	 */
-	public static final int CONNECTION_TIMEOUT = 30000;
+	public static final int CONNECTION_TIMEOUT = 15000;
 	
 	public static final int JAVASCRIPT_TIMEOUT = 3000;
 	

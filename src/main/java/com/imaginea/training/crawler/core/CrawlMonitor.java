@@ -33,15 +33,16 @@ public class CrawlMonitor implements Runnable {
 			}
 			
 			try {
+				//logger.info("shutdownThreads:" + shutdownThreads + ", completedThreads:" + completedThreads);
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {}
 			
-			logger.debug("shutdownThreads:" + shutdownThreads + ", completedThreads:" + completedThreads);
 			if((shutdownThreads + completedThreads) == Config.NO_OF_MONTH_THREADS){
 				crawler.setExit(true);
 			}
 		}
-		logger.info("Crawling process exited. Status of months, Completed:{}, Shutdown:{}", crawler.getTotalMonthsCompletedList().size(), crawler.getShutdownMap().size());
+		logger.info("Crawling process exited");
+		logger.info("Status of months, Completed:{}, Shutdown:{}", crawler.getTotalMonthsCompletedList().size(), crawler.getShutdownMap().size());
 		logger.info("Completed: {}, Shutdown: {}", crawler.getTotalMonthsCompletedList(), crawler.getShutdownMap().keySet()); 
 		System.exit(1);
 	}

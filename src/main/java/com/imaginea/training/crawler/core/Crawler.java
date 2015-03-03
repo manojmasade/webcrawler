@@ -43,7 +43,6 @@ public class Crawler implements Runnable {
 	@Autowired
 	private Parser parser;
 	
-	@Autowired
 	private CrawlMonitor crawlMonitor;
 	
 	private int elapsedDuration = 0;
@@ -69,9 +68,9 @@ public class Crawler implements Runnable {
 		"Jun", "May", "Apr", "Mar", "Feb", "Jan"
 	};
 	
-	public Crawler(String year, String month) {
+	public Crawler(String year, String name) {
 		this.year = year;
-		this.name = year;
+		this.name = name;
 	}
 	
 	private void init() {
@@ -80,7 +79,7 @@ public class Crawler implements Runnable {
 	
 	private void initMonitorThread() {
 		// Monitor thread
-		//CrawlMonitor crawlMonitor = new CrawlMonitor(this);
+		CrawlMonitor crawlMonitor = new CrawlMonitor(this);
 		Thread monitor = new Thread(crawlMonitor);
 		monitor.start();
 	}

@@ -4,7 +4,6 @@ import java.util.Date;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.imaginea.training.crawler.core.Config;
@@ -20,7 +19,7 @@ public class App {
 	
 	private static final String CONFIG_PATH = "classpath*:applicationContext.xml";
 	
-	private static final ApplicationContext context = new ClassPathXmlApplicationContext(CONFIG_PATH);
+	private static final ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(CONFIG_PATH);
 	
 	
     public static void main( String[] args ) {
@@ -42,8 +41,8 @@ public class App {
     	String years[] = { "2014" };
     	for (int i = 0; i < years.length; i++) {
     		Crawler crawler = (Crawler) context.getBean("crawler", years[i], years[i]);
-        	Thread parent = new Thread(crawler);
-        	parent.start();	
+        	Thread yearThread = new Thread(crawler);
+        	yearThread.start();	
 		}
         
         long processEndTime = System.currentTimeMillis();

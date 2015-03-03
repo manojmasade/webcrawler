@@ -228,7 +228,7 @@ public class CrawlerThread implements Runnable {
 				fileNameBuffer = new StringBuffer();
 				fileName = fileNameBuffer.append(emailAddress).append(Constant.UNDERSCORE).append(emailSentDate).toString();
 				controller.getFileUtil().downloadEmail(fileName, emailContent, year, month);
-				logger.debug("Email content: " + emailContent);
+				//logger.debug("Email content: " + emailContent);
 				this.currentMsgCount += 1;	
 				this.totalMsgCount -= 1;
 			} else {
