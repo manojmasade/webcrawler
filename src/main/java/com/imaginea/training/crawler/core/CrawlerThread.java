@@ -4,12 +4,10 @@ import java.io.IOException;
 import java.net.NoRouteToHostException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.util.Date;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
@@ -24,11 +22,11 @@ import com.imaginea.training.crawler.constant.Constant;
 import com.imaginea.training.crawler.exception.CrawlException;
 import com.imaginea.training.crawler.parser.Parser;
 
-public class CrawlerThread implements Runnable {
+public class CrawlerThread extends AbstractCrawler implements Runnable {
 	
 	private static final Logger logger = LoggerFactory.getLogger(CrawlerThread.class);
 	
-	@Autowired
+	//@Autowired
 	private Config config;
 
 	private Crawler crawler;
@@ -147,10 +145,10 @@ public class CrawlerThread implements Runnable {
 					}
 				}
 				// To mark the completion trace
-				handleShutdown();
+				handleShutdown(crawler);
 			}
 		} catch(CrawlException e) {
-			handleShutdown();
+			handleShutdown(crawler);
 			throw e;
 		} catch(Exception e) {
 			logger.error("processPage failed", e);
@@ -169,7 +167,7 @@ public class CrawlerThread implements Runnable {
 			HtmlAnchor anchor = (HtmlAnchor) anchor_monthNode;
 			HtmlPage monthResponse = null;
 			
-			if(!crawler.isShutdown() && controller.getNetUtil().isInternetReachable()) {
+			if(!this.isShutdown() && controller.getNetUtil().isInternetReachable()) {
 				monthResponse = anchor.click();
 				HtmlElement result = monthResponse.getHtmlElementById(Constant.MSGLIST);
 				HtmlTable table_msgList = (HtmlTable) result;
@@ -177,12 +175,12 @@ public class CrawlerThread implements Runnable {
 				HtmlTableBody tbody_msg = tbody_msgslist.get(0);
 				List<HtmlTableRow> tr_msgs = tbody_msg.getRows();
 				
-				for (int i = this.beginCrawlIndex; (i < tr_msgs.size() && !crawler.isShutdown()); i++) {
+				for (int i = this.beginCrawlIndex; (i < tr_msgs.size() && !this.isShutdown()); i++) {
 					final HtmlTableRow tr_msg = tr_msgs.get(i);
 					List<HtmlTableCell> td_msgs = tr_msg.getCells();
 					final HtmlTableCell td_msg = td_msgs.get(1); 
 
-					if(!crawler.isShutdown()) {
+					if(!this.isShutdown()) {
 						if(this.totalMsgCount > 0) {
 							DomNodeList<HtmlElement> anchor_msgNodes = td_msg.getElementsByTagName(Constant.TAG_A);
 							if(anchor_msgNodes.size() > 0) {
@@ -191,7 +189,7 @@ public class CrawlerThread implements Runnable {
 								extractEmailContent(anchor_msgNode, year, month);
 							}
 						} else {
-							handleShutdown();
+							handleShutdown(crawler);
 						}
 					}
 				}
@@ -199,7 +197,7 @@ public class CrawlerThread implements Runnable {
 			}
 		} catch (Exception e) {
 			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
-				handleShutdown();
+				handleShutdown(crawler);
 			} else {
 				logger.error("extract list of emails failed", e);
 				throw new CrawlException(e);
@@ -223,7 +221,7 @@ public class CrawlerThread implements Runnable {
 			String emailSentDate = null;
 			emailAddress = emailAnchorNode.getHrefAttribute();
 			
-			if(!crawler.isShutdown() && controller.getNetUtil().isInternetReachable()) {
+			if(!this.isShutdown() && controller.getNetUtil().isInternetReachable()) {
 				emailResponse = emailAnchorNode.click();
 				emailContent = emailResponse.asXml();
 				emailSentDate = parser.parseEmailSentDate(emailResponse);
@@ -236,11 +234,11 @@ public class CrawlerThread implements Runnable {
 				this.currentMsgCount += 1;	
 				this.totalMsgCount -= 1;
 			} else {
-				handleShutdown();
+				handleShutdown(crawler);
 			}
 		} catch (Exception e) {
 			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
-				handleShutdown();
+				handleShutdown(crawler);
 			} else {
 				logger.error("extract email content failed", e);
 				throw new CrawlException(e);
@@ -249,41 +247,10 @@ public class CrawlerThread implements Runnable {
 	}
 
 	/**
-	 * Handle shutdown process
-	 */
-	private void handleShutdown() {
-		logger.debug("handleShutdown {}", month);
-		
-		while(true && !crawler.isShutdown()) {
-			if(controller.getNetUtil().isInternetReachable()) {
-				crawler.setElapsedDuration(0);
-				break;
-			} else {
-				try {
-					synchronized (this) {
-						if(crawler.getElapsedDuration() >= crawler.getShutdownDuration()) {
-							break;
-						} else {
-							if(null == crawler.getLockApplied()) {
-								crawler.setLockApplied(this);	
-							}
-							if(this == crawler.getLockApplied()) {
-								logger.info("Sleep {}", new Date());
-								Thread.sleep(config.getSleepInterval());
-								crawler.setElapsedDuration(crawler.getElapsedDuration() + config.getSleepInterval());	
-							}
-						}	
-					}
-				} catch (InterruptedException e1) {}  
-			}
-		}
-		storeCrawlersData();
-	}
-	
-	/**
 	 * Save the crawler threads information to file for resume operation
 	 */
-	private void storeCrawlersData() {
+	@Override
+	public void storeCrawlersData() {
 		logger.debug("storeCrawlersData");
 		
 		if(this.totalMsgCount == 0) {
@@ -293,7 +260,7 @@ public class CrawlerThread implements Runnable {
 		} else {
 			if(!crawler.getShutdownMap().containsKey(this.name)) {
 				crawler.getShutdownMap().put(this.name, true);
-				crawler.setShutdown(true);
+				this.setShutdown(true);
 				logger.info("Shutdown CrawlerThread");
 			}
 		}	

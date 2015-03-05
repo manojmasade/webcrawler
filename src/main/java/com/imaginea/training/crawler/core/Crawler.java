@@ -4,7 +4,6 @@ import java.net.NoRouteToHostException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +27,7 @@ import com.imaginea.training.crawler.parser.Parser;
  * @author manojm
  *
  */
-public class Crawler implements Runnable {
+public class Crawler extends AbstractCrawler implements Runnable {
 	
 	private static final Logger logger = LoggerFactory.getLogger(Crawler.class);
 	
@@ -37,21 +36,14 @@ public class Crawler implements Runnable {
 	private String year;
 		
 	@Autowired
-	private Controller controller;
-	
-	@Autowired
 	private Parser parser;
 	
 	@Autowired
 	private Config config;
 	
-	private CrawlMonitor crawlMonitor;
-	
 	private int elapsedDuration = 0;
 	
 	private int shutdownDuration = 0;
-	
-	private boolean shutdown = false;
 	
 	private boolean exit = false;
 	
@@ -82,6 +74,7 @@ public class Crawler implements Runnable {
 	private void initMonitorThread() {
 		// Monitor thread
 		CrawlMonitor crawlMonitor = new CrawlMonitor(this);
+		crawlMonitor.setConfig(config);
 		Thread monitor = new Thread(crawlMonitor);
 		monitor.start();
 	}
@@ -113,7 +106,7 @@ public class Crawler implements Runnable {
 		int msgCount = 0;
 		
 		if(config.isResumeCrawling()) {
-			String crawlStatus = controller.getFileUtil().getFileContent(config.getEmailsDownloadDir(), config.getCrawlFileName());
+			String crawlStatus = getController().getFileUtil().getFileContent(config.getEmailsDownloadDir(), config.getCrawlFileName());
 			if(crawlStatus != null){
 				if(crawlStatus.equalsIgnoreCase(Constant.STATE_RUNNING)) {
 					initializeAllThreads = true;
@@ -126,7 +119,7 @@ public class Crawler implements Runnable {
 		
 		for (int i = 0; i < months.length; i++) {
 			if(initializeAllThreads) {
-				crawl_monthMsgCount = controller.getFileUtil().getFileContent(config.getEmailsDownloadDir(), months[i]);
+				crawl_monthMsgCount = getController().getFileUtil().getFileContent(config.getEmailsDownloadDir(), months[i]);
 				if(crawl_monthMsgCount != null) {
 					msgCount = Integer.parseInt(crawl_monthMsgCount);
 					crawledMonthMsgCountMap.put(months[i], msgCount);
@@ -153,7 +146,7 @@ public class Crawler implements Runnable {
 			webClient.setJavaScriptTimeout(config.getJavascriptTimeout()); 
 			final HtmlPage page = parser.getPage(webClient);
 			
-			if(page != null && controller.getNetUtil().isInternetReachable()) {
+			if(page != null && getController().getNetUtil().isInternetReachable()) {
 				HtmlElement table_yearElement = parser.parseTableForYear(page, this.year);
 				HtmlTable table_year = (HtmlTable) table_yearElement;
 				HtmlTableBody tbody_year = table_year.getBodies().get(0);
@@ -171,8 +164,9 @@ public class Crawler implements Runnable {
 					
 					// Month threads
 					if(crawledMonthMsgCountMap.get(month) != null) {
-						CrawlerThread crawlerThread = new CrawlerThread(this, parser, controller, month, year);
+						CrawlerThread crawlerThread = new CrawlerThread(this, parser, getController(), month, year);
 			        	crawlerThread.setName(month);
+			        	crawlerThread.setConfig(config);
 			        	int crawledMsgCount = crawledMonthMsgCountMap.get(month);
 			        	int pendingTotalMsgCount = Integer.parseInt(msgCount) - crawledMsgCount;
 			        	crawlerThread.setTotalMsgCount(pendingTotalMsgCount);
@@ -184,15 +178,15 @@ public class Crawler implements Runnable {
 
 				//webClient.closeAllWindows();
 			} else {
-				handleShutdown();
-				if(controller.getNetUtil().isInternetReachable()) {
+				handleShutdown(this);
+				if(getController().getNetUtil().isInternetReachable()) {
 					processCrawl();	
 				}
 			}
 			logger.debug("processPage end");
 		} catch (Exception e) {
 			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
-				handleShutdown();
+				handleShutdown(this);
 			} else {
 				logger.error("processPage failed", e);
 				throw new CrawlException(e);
@@ -201,43 +195,13 @@ public class Crawler implements Runnable {
 	}
 
 	/**
-	 * Handle shutdown process
-	 */
-	private void handleShutdown() {
-		logger.debug("handleShutdown");
-		while(true && !this.isShutdown()) {
-			if(controller.getNetUtil().isInternetReachable()) {
-				this.setElapsedDuration(0);
-				break;
-			} else {
-				try {
-					synchronized (this) {
-						if(this.getElapsedDuration() >= this.getShutdownDuration()) {
-							break;
-						} else {
-							if(null == this.getLockApplied()) {
-								this.setLockApplied(this);	
-							}
-							if(this == this.getLockApplied()) {
-								logger.debug("Sleep {}", new Date());
-								Thread.sleep(config.getSleepInterval());
-								this.setElapsedDuration(this.getElapsedDuration() + config.getSleepInterval());	
-							}	
-						}	
-					}
-				} catch (InterruptedException e1) {} 
-			}
-		}
-		storeCrawlersData();
-	}
-	
-	/**
 	 * Save the crawler threads information to file for resume operation
 	 */
-	private void storeCrawlersData() {
+	@Override
+	public void storeCrawlersData() {
 		logger.debug("store crawlers data");
 		if(!this.getShutdownMap().containsKey(this.name)) {
-			controller.getFileUtil().createFile(config.getEmailsDownloadDir(), config.getCrawlFileName(), Constant.STATE_INITIALIZE);
+			getController().getFileUtil().createFile(config.getEmailsDownloadDir(), config.getCrawlFileName(), Constant.STATE_INITIALIZE);
 			this.setShutdown(true);
 			this.setExit(true);
 			logger.info("Shutdown Crawler"); 
@@ -274,14 +238,6 @@ public class Crawler implements Runnable {
 
 	public void setShutdownDuration(int shutdownDuration) {
 		this.shutdownDuration = shutdownDuration;
-	}
-
-	public synchronized boolean isShutdown() {
-		return shutdown;
-	}
-
-	public synchronized void setShutdown(boolean shutdown) {
-		this.shutdown = shutdown;
 	}
 
 	public synchronized Map<String, Boolean> getShutdownMap() {
@@ -324,28 +280,12 @@ public class Crawler implements Runnable {
 		this.crawledMonthMsgCountMap = crawledMonthMsgCountMap;
 	}
 
-	public Controller getController() {
-		return controller;
-	}
-
 	public Parser getParser() {
 		return parser;
 	}
 
 	public void setParser(Parser parser) {
 		this.parser = parser;
-	}
-
-	public void setController(Controller controller) {
-		this.controller = controller;
-	}
-
-	public CrawlMonitor getCrawlMonitor() {
-		return crawlMonitor;
-	}
-
-	public void setCrawlMonitor(CrawlMonitor crawlMonitor) {
-		this.crawlMonitor = crawlMonitor;
 	}
 
 	public Config getConfig() {

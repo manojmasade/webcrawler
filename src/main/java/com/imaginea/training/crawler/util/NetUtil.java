@@ -40,4 +40,12 @@ public class NetUtil implements INetUtil {
 		return reachable;
 	}
 
+	public Config getConfig() {
+		return config;
+	}
+
+	public void setConfig(Config config) {
+		this.config = config;
+	}
+
 }
