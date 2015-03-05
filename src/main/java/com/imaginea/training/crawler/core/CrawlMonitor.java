@@ -15,7 +15,6 @@ public class CrawlMonitor implements Runnable {
 	
 	private static final Logger logger = LoggerFactory.getLogger(CrawlMonitor.class);
 
-	@Autowired
 	private Config config;
 	
 	@Autowired
