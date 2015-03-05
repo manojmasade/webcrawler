@@ -5,6 +5,7 @@ import java.net.Socket;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.imaginea.training.crawler.core.Config;
 
@@ -16,6 +17,9 @@ import com.imaginea.training.crawler.core.Config;
 public class NetUtil implements INetUtil {
 	
 	private static final Logger logger = LoggerFactory.getLogger(NetUtil.class);
+	
+	@Autowired
+	private Config config;
 
 	@Override
 	public Boolean isInternetReachable() {
@@ -23,7 +27,7 @@ public class NetUtil implements INetUtil {
 		boolean reachable = false;
 		
 		try {
-			if(!Config.runSafeMode) {
+			if(!config.isRunSafeMode()) {
 				socket = new Socket("java.sun.com", 80);	
 			}
 		    reachable = true;

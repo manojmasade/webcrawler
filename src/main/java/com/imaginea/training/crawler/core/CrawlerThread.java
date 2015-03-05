@@ -69,8 +69,8 @@ public class CrawlerThread implements Runnable {
 	
 	private void init() {
 		this.webClient = new WebClient();
-		this.webClient.getOptions().setTimeout(Config.CONNECTION_TIMEOUT);
-		webClient.setJavaScriptTimeout(Config.JAVASCRIPT_TIMEOUT);
+		this.webClient.getOptions().setTimeout(config.getConnectionTimeout());
+		webClient.setJavaScriptTimeout(config.getJavascriptTimeout());
 	}
 	
 	@Override
@@ -269,8 +269,8 @@ public class CrawlerThread implements Runnable {
 							}
 							if(this == crawler.getLockApplied()) {
 								logger.info("Sleep {}", new Date());
-								Thread.sleep(Config.SLEEP_INTERVAL);
-								crawler.setElapsedDuration(crawler.getElapsedDuration() + Config.SLEEP_INTERVAL);	
+								Thread.sleep(config.getSleepInterval());
+								crawler.setElapsedDuration(crawler.getElapsedDuration() + config.getSleepInterval());	
 							}
 						}	
 					}
@@ -297,7 +297,7 @@ public class CrawlerThread implements Runnable {
 				logger.info("Shutdown CrawlerThread");
 			}
 		}	
-		controller.getFileUtil().createFile(config.getEmailsDownloadDir(), Config.FILE_CRAWL, Config.STATE_RUNNING);
+		controller.getFileUtil().createFile(config.getEmailsDownloadDir(), config.getCrawlFileName(), Constant.STATE_RUNNING);
 		controller.getFileUtil().createFile(config.getEmailsDownloadDir(), this.name, String.valueOf(currentMsgCount));
 	}
 

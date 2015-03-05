@@ -39,8 +39,8 @@ public class App {
     	long processStartTime = System.currentTimeMillis();
     	logger.info("Begin Date:" + new Date());
     	
-    	Config.setRunSafeMode(true); 
-    	Config.setResumeCrawling(false);
+    	config.setRunSafeMode(true); 
+    	config.setResumeCrawling(false);
     	
     	String years[] = { "2014" };
     	for (int i = 0; i < years.length; i++) {

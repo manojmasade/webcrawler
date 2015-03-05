@@ -53,4 +53,12 @@ public class Constant {
 	
 	public static final String MSGCOUNT = "msgcount";
 	
+	public static final String STATE_INITIALIZE = "INITIALIZE";
+	
+	public static final String STATE_RUNNING = "RUNNING";
+	
+	public static final String STATE_COMPLETED = "COMPLETED";
+	
+	public static final int NO_OF_MONTHS = 12;
+	
 }

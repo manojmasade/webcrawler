@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.imaginea.training.crawler.constant.Constant;
+
 /**
  * 
  * @author manojm
@@ -31,8 +33,8 @@ public class CrawlMonitor implements Runnable {
 			int completedThreads = crawler.getTotalMonthsCompletedList().size();
 
 			// When all threads have completed their job
-			if(completedThreads == Config.NO_OF_MONTH_THREADS) {
-				crawler.getController().getFileUtil().createFile(config.getEmailsDownloadDir(), Config.FILE_CRAWL, Config.STATE_COMPLETED);
+			if(completedThreads == config.getNoOfMonths()) {
+				crawler.getController().getFileUtil().createFile(config.getEmailsDownloadDir(), config.getCrawlFileName(), Constant.STATE_COMPLETED);
 			}
 			
 			try {
@@ -40,7 +42,7 @@ public class CrawlMonitor implements Runnable {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {}
 			
-			if((shutdownThreads + completedThreads) == Config.NO_OF_MONTH_THREADS){
+			if((shutdownThreads + completedThreads) == config.getNoOfMonths()){
 				crawler.setExit(true);
 			}
 		}

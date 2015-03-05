@@ -76,7 +76,7 @@ public class Crawler implements Runnable {
 	}
 	
 	private void init() {
-		setShutdownDuration(Config.SHUTDOWN_TIME);
+		setShutdownDuration(config.getShutdownTime());
 	}
 	
 	private void initMonitorThread() {
@@ -112,12 +112,12 @@ public class Crawler implements Runnable {
 		String crawl_monthMsgCount = null;
 		int msgCount = 0;
 		
-		if(Config.isResumeCrawling()) {
-			String crawlStatus = controller.getFileUtil().getFileContent(config.getEmailsDownloadDir(), Config.FILE_CRAWL);
+		if(config.isResumeCrawling()) {
+			String crawlStatus = controller.getFileUtil().getFileContent(config.getEmailsDownloadDir(), config.getCrawlFileName());
 			if(crawlStatus != null){
-				if(crawlStatus.equalsIgnoreCase(Config.STATE_RUNNING)) {
+				if(crawlStatus.equalsIgnoreCase(Constant.STATE_RUNNING)) {
 					initializeAllThreads = true;
-				} else if(crawlStatus.equalsIgnoreCase(Config.STATE_COMPLETED)) {
+				} else if(crawlStatus.equalsIgnoreCase(Constant.STATE_COMPLETED)) {
 					skipCrawling = true;
 					return;
 				}
@@ -149,8 +149,8 @@ public class Crawler implements Runnable {
 			String month = null; 
 			String msgCount = null;
 			final WebClient webClient = new WebClient();
-			webClient.getOptions().setTimeout(Config.CONNECTION_TIMEOUT);
-			webClient.setJavaScriptTimeout(Config.JAVASCRIPT_TIMEOUT); 
+			webClient.getOptions().setTimeout(config.getConnectionTimeout());
+			webClient.setJavaScriptTimeout(config.getJavascriptTimeout()); 
 			final HtmlPage page = parser.getPage(webClient);
 			
 			if(page != null && controller.getNetUtil().isInternetReachable()) {
@@ -220,8 +220,8 @@ public class Crawler implements Runnable {
 							}
 							if(this == this.getLockApplied()) {
 								logger.debug("Sleep {}", new Date());
-								Thread.sleep(Config.SLEEP_INTERVAL);
-								this.setElapsedDuration(this.getElapsedDuration() + Config.SLEEP_INTERVAL);	
+								Thread.sleep(config.getSleepInterval());
+								this.setElapsedDuration(this.getElapsedDuration() + config.getSleepInterval());	
 							}	
 						}	
 					}
@@ -237,7 +237,7 @@ public class Crawler implements Runnable {
 	private void storeCrawlersData() {
 		logger.debug("store crawlers data");
 		if(!this.getShutdownMap().containsKey(this.name)) {
-			controller.getFileUtil().createFile(config.getEmailsDownloadDir(), Config.FILE_CRAWL, Config.STATE_INITIALIZE);
+			controller.getFileUtil().createFile(config.getEmailsDownloadDir(), config.getCrawlFileName(), Constant.STATE_INITIALIZE);
 			this.setShutdown(true);
 			this.setExit(true);
 			logger.info("Shutdown Crawler"); 
