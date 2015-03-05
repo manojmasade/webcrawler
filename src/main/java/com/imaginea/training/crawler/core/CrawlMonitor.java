@@ -14,6 +14,9 @@ public class CrawlMonitor implements Runnable {
 	private static final Logger logger = LoggerFactory.getLogger(CrawlMonitor.class);
 
 	@Autowired
+	private Config config;
+	
+	@Autowired
 	private Crawler crawler;
 	
 	public CrawlMonitor(Crawler crawler) {
@@ -29,7 +32,7 @@ public class CrawlMonitor implements Runnable {
 
 			// When all threads have completed their job
 			if(completedThreads == Config.NO_OF_MONTH_THREADS) {
-				crawler.getController().getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, Config.FILE_CRAWL, Config.STATE_COMPLETED);
+				crawler.getController().getFileUtil().createFile(config.getEmailsDownloadDir(), Config.FILE_CRAWL, Config.STATE_COMPLETED);
 			}
 			
 			try {
@@ -53,6 +56,14 @@ public class CrawlMonitor implements Runnable {
 
 	public void setCrawler(Crawler crawler) {
 		this.crawler = crawler;
+	}
+
+	public Config getConfig() {
+		return config;
+	}
+
+	public void setConfig(Config config) {
+		this.config = config;
 	}
 
 }

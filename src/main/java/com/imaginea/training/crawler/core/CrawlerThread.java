@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
@@ -26,6 +27,9 @@ import com.imaginea.training.crawler.parser.Parser;
 public class CrawlerThread implements Runnable {
 	
 	private static final Logger logger = LoggerFactory.getLogger(CrawlerThread.class);
+	
+	@Autowired
+	private Config config;
 
 	private Crawler crawler;
 	
@@ -293,8 +297,8 @@ public class CrawlerThread implements Runnable {
 				logger.info("Shutdown CrawlerThread");
 			}
 		}	
-		controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, Config.FILE_CRAWL, Config.STATE_RUNNING);
-		controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, this.name, String.valueOf(currentMsgCount));
+		controller.getFileUtil().createFile(config.getEmailsDownloadDir(), Config.FILE_CRAWL, Config.STATE_RUNNING);
+		controller.getFileUtil().createFile(config.getEmailsDownloadDir(), this.name, String.valueOf(currentMsgCount));
 	}
 
 	public int getCurrentMsgCount() {
@@ -335,6 +339,14 @@ public class CrawlerThread implements Runnable {
 
 	public void setTotalMsgCount(int totalMsgCount) {
 		this.totalMsgCount = totalMsgCount;
+	}
+
+	public Config getConfig() {
+		return config;
+	}
+
+	public void setConfig(Config config) {
+		this.config = config;
 	}
 
 }

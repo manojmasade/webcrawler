@@ -7,6 +7,7 @@ import java.io.IOException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.imaginea.training.crawler.constant.Constant;
 import com.imaginea.training.crawler.core.Config;
@@ -21,15 +22,18 @@ public class FileUtil implements IFileUtil {
 	
 	private static final Logger logger = LoggerFactory.getLogger(FileUtil.class);
 	
+	@Autowired
+	private Config config;
+	
 	/**
 	 * Create a directory if does not exist
 	 * @return
 	 */
 	private File createDirectory(String year, String month) {
-		File tempDir = new File(Config.DIR_DOWNLOAD_EMAILS);
+		File tempDir = new File(config.getEmailsDownloadDir());
 	    if (!tempDir.exists()) {
 	    	tempDir.mkdir();
-	    	logger.debug("{} directory created", Config.DIR_DOWNLOAD_EMAILS);
+	    	logger.debug("{} directory created", config.getEmailsDownloadDir());
 	    }
 		File fileDir = new File(tempDir, year);
 	    if (!fileDir.exists()) {
@@ -54,10 +58,10 @@ public class FileUtil implements IFileUtil {
 			File fileDir = new File(dir);
 		    if (!fileDir.exists()) {
 		    	fileDir.mkdir();
-		    	logger.debug("{} directory created", Config.DIR_DOWNLOAD_EMAILS);
+		    	logger.debug("{} directory created", config.getEmailsDownloadDir());
 		    }
 		    
-			file = new File(fileDir, fileName + Config.FILE_EXTENSION);
+			file = new File(fileDir, fileName + config.getFileExtension());
 			if(!file.exists()) {
 		 		logger.debug("Creating a file {} as it does not exist", file.getPath());
 				file.createNewFile();
@@ -98,7 +102,7 @@ public class FileUtil implements IFileUtil {
 			 
 			 	// File : replace invalid chars from file name
 			    fileName = fileName.replace(Constant.COLON, Constant.HYPHEN);
-			 	file = new File(fileDir, fileName + Config.FILE_EXTENSION);
+			 	file = new File(fileDir, fileName + config.getFileExtension());
 			 	logger.debug("Absolute path:" + file.getAbsolutePath());
 			 	
 			 	if(!file.exists()) {
@@ -136,7 +140,7 @@ public class FileUtil implements IFileUtil {
 		
 		try {
 			File fileDir = new File(dir);
-			file = new File(fileDir, fileName + Config.FILE_EXTENSION);
+			file = new File(fileDir, fileName + config.getFileExtension());
 			reader = new FileReader(file);
 			char[] chars = new char[(int) file.length()];
 			reader.read(chars);
@@ -156,5 +160,13 @@ public class FileUtil implements IFileUtil {
 			}
 		 }
 		return result;
+	}
+
+	public Config getConfig() {
+		return config;
+	}
+
+	public void setConfig(Config config) {
+		this.config = config;
 	}
 }

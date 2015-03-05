@@ -42,6 +42,9 @@ public class Crawler implements Runnable {
 	@Autowired
 	private Parser parser;
 	
+	@Autowired
+	private Config config;
+	
 	private CrawlMonitor crawlMonitor;
 	
 	private int elapsedDuration = 0;
@@ -110,7 +113,7 @@ public class Crawler implements Runnable {
 		int msgCount = 0;
 		
 		if(Config.isResumeCrawling()) {
-			String crawlStatus = controller.getFileUtil().getFileContent(Config.DIR_DOWNLOAD_EMAILS, Config.FILE_CRAWL);
+			String crawlStatus = controller.getFileUtil().getFileContent(config.getEmailsDownloadDir(), Config.FILE_CRAWL);
 			if(crawlStatus != null){
 				if(crawlStatus.equalsIgnoreCase(Config.STATE_RUNNING)) {
 					initializeAllThreads = true;
@@ -123,7 +126,7 @@ public class Crawler implements Runnable {
 		
 		for (int i = 0; i < months.length; i++) {
 			if(initializeAllThreads) {
-				crawl_monthMsgCount = controller.getFileUtil().getFileContent(Config.DIR_DOWNLOAD_EMAILS, months[i]);
+				crawl_monthMsgCount = controller.getFileUtil().getFileContent(config.getEmailsDownloadDir(), months[i]);
 				if(crawl_monthMsgCount != null) {
 					msgCount = Integer.parseInt(crawl_monthMsgCount);
 					crawledMonthMsgCountMap.put(months[i], msgCount);
@@ -234,7 +237,7 @@ public class Crawler implements Runnable {
 	private void storeCrawlersData() {
 		logger.debug("store crawlers data");
 		if(!this.getShutdownMap().containsKey(this.name)) {
-			controller.getFileUtil().createFile(Config.DIR_DOWNLOAD_EMAILS, Config.FILE_CRAWL, Config.STATE_INITIALIZE);
+			controller.getFileUtil().createFile(config.getEmailsDownloadDir(), Config.FILE_CRAWL, Config.STATE_INITIALIZE);
 			this.setShutdown(true);
 			this.setExit(true);
 			logger.info("Shutdown Crawler"); 
@@ -343,6 +346,14 @@ public class Crawler implements Runnable {
 
 	public void setCrawlMonitor(CrawlMonitor crawlMonitor) {
 		this.crawlMonitor = crawlMonitor;
+	}
+
+	public Config getConfig() {
+		return config;
+	}
+
+	public void setConfig(Config config) {
+		this.config = config;
 	}
 	
 }

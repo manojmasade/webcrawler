@@ -12,9 +12,9 @@ public class Config {
 	
 	private static final Logger logger = LoggerFactory.getLogger(Config.class);
 	
-	public static final String DIR_DOWNLOAD_EMAILS = "tmp";
+	private String emailsDownloadDir = "tmp";
 	
-	public static final String FILE_EXTENSION = ".html";
+	private String fileExtension = ".html";
 	
 	public static final String FILE_CRAWL = "crawl";
 
@@ -72,6 +72,22 @@ public class Config {
 
 	public static void setResumeCrawling(boolean resumeCrawling) {
 		Config.resumeCrawling = resumeCrawling;
+	}
+
+	public String getEmailsDownloadDir() {
+		return emailsDownloadDir;
+	}
+
+	public void setEmailsDownloadDir(String emailsDownloadDir) {
+		this.emailsDownloadDir = emailsDownloadDir;
+	}
+
+	public String getFileExtension() {
+		return fileExtension;
+	}
+
+	public void setFileExtension(String fileExtension) {
+		this.fileExtension = fileExtension;
 	}
 	
 }

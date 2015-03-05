@@ -4,6 +4,7 @@ import java.util.Date;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.imaginea.training.crawler.core.Config;
@@ -20,6 +21,9 @@ public class App {
 	private static final String CONFIG_PATH = "classpath*:applicationContext.xml";
 	
 	private static final ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(CONFIG_PATH);
+	
+	@Autowired
+	private Config config;
 	
 	
     public static void main( String[] args ) {
@@ -49,4 +53,12 @@ public class App {
 		long processDiffTime = processEndTime-processStartTime;
 		logger.info("Crawl Duration - Seconds : " + processDiffTime/1000 + ", Minutes: " + processDiffTime/(1000*60));
     }
+
+	public Config getConfig() {
+		return config;
+	}
+
+	public void setConfig(Config config) {
+		this.config = config;
+	}
 }
