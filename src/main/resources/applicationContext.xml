@@ -3,7 +3,7 @@
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
  
- 	<bean id="config" class="com.imaginea.training.crawler.core.Config" />
+ 	<bean id="config" class="com.imaginea.training.crawler.core.Config" scope="singleton" />
  	<bean id="app" class="com.imaginea.training.crawler.App" />
  	<bean id="fileUtil" class="com.imaginea.training.crawler.util.FileUtil" />
 	<bean id="netUtil" class="com.imaginea.training.crawler.util.NetUtil" />
