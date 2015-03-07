@@ -61,7 +61,7 @@ public class Crawler extends AbstractCrawler implements Runnable {
 		"Dec", "Nov", "Oct", "Sep", "Aug", "Jul",
 		"Jun", "May", "Apr", "Mar", "Feb", "Jan"
 	};
-	
+
 	public Crawler(String year) {
 		this.year = year;
 		this.name = year;
@@ -154,21 +154,23 @@ public class Crawler extends AbstractCrawler implements Runnable {
 				// Months
 				for (final HtmlTableRow tr_monthNode : tbody_year.getRows()) {
 
-					if(logger.isInfoEnabled() || logger.isDebugEnabled()){
-						List<HtmlElement> td_monthDateElement = tr_monthNode.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
-						month = td_monthDateElement.get(0).asText();
-						month = month.substring(0, month.indexOf(Constant.SPACE));
-						List<HtmlElement> td_monthMsgcountElement = tr_monthNode.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.MSGCOUNT);
-						msgCount = td_monthMsgcountElement.get(0).asText();
-					}
+					// Get month and msgCount
+					List<HtmlElement> td_monthDateElement = tr_monthNode.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
+					month = td_monthDateElement.get(0).asText();
+					month = month.substring(0, month.indexOf(Constant.SPACE));
+					List<HtmlElement> td_monthMsgcountElement = tr_monthNode.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.MSGCOUNT);
+					msgCount = td_monthMsgcountElement.get(0).asText();
 					
-					// Month threads
+					// Create threads for each month
 					if(crawledMonthMsgCountMap.get(month) != null) {
-						CrawlerThread crawlerThread = new CrawlerThread(this, parser, getController(), month, year);
-			        	crawlerThread.setName(month);
-			        	crawlerThread.setConfig(config);
-			        	int crawledMsgCount = crawledMonthMsgCountMap.get(month);
+						int crawledMsgCount = crawledMonthMsgCountMap.get(month);
 			        	int pendingTotalMsgCount = Integer.parseInt(msgCount) - crawledMsgCount;
+			        	
+						CrawlerThread crawlerThread = new CrawlerThread(this, month, year);
+			        	crawlerThread.setName(month);
+			        	crawlerThread.setParser(parser);
+			        	crawlerThread.setController(getController());
+			        	crawlerThread.setConfig(config);
 			        	crawlerThread.setTotalMsgCount(pendingTotalMsgCount);
 			        	crawlerThread.setCurrentMsgCount(crawledMsgCount);
 						Thread child = new Thread(crawlerThread);

@@ -9,6 +9,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.gargoylesoftware.htmlunit.TextPage;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
@@ -30,14 +31,10 @@ public class CrawlerThread extends AbstractCrawler implements Runnable {
 	private Config config;
 
 	private Crawler crawler;
-	
-	private WebClient webClient = null;
 
-	private HtmlPage page = null;
+	private Controller controller;
 	
-	private HtmlElement table_yearElement = null;
-	
-	private HtmlTableBody tbody_year = null;
+	private Parser parser;
 	
 	private int currentMsgCount = 0;
 	
@@ -49,31 +46,18 @@ public class CrawlerThread extends AbstractCrawler implements Runnable {
 	
 	private String month;
 	
-	private Controller controller;
-	
-	private Parser parser;
-	
 	private int totalMsgCount = 0;
 	
 
-	public CrawlerThread(Crawler crawler, Parser parser, Controller controller, String month, String year) {
+	public CrawlerThread(Crawler crawler, String month, String year) {
 		logger.debug("year:" + year + ",month:" + month);
 		this.crawler = crawler;
-		this.parser = parser;
-		this.controller = controller;
 		this.month = month;
 		this.year = year;
 	}
 	
-	private void init() {
-		this.webClient = new WebClient();
-		this.webClient.getOptions().setTimeout(config.getConnectionTimeout());
-		webClient.setJavaScriptTimeout(config.getJavascriptTimeout());
-	}
-	
 	@Override
 	public void run() {
-		init();
 		processCrawl();
 	}
 	
@@ -81,14 +65,15 @@ public class CrawlerThread extends AbstractCrawler implements Runnable {
 	 * Get table row <tr></tr> for the month
 	 * @return
 	 */
-	private HtmlTableRow getTableRowForMonth() {
+	private HtmlTableRow getTableRowForMonth(HtmlPage page) {
+		
 		if(page != null) {
-			this.table_yearElement = parser.parseTableForYear(page, year);
+			HtmlElement table_yearElement = parser.parseTableForYear(page, year);
 			HtmlTable table_yearList = (HtmlTable) table_yearElement;
 			List<HtmlTableBody> tbody_yearlist = table_yearList.getBodies();
-			this.tbody_year = tbody_yearlist.get(0);
+			HtmlTableBody tbody_year = tbody_yearlist.get(0);
 			
-			for (final HtmlTableRow result : this.tbody_year.getRows()) {
+			for (final HtmlTableRow result : tbody_year.getRows()) {
 				List<HtmlElement> td_monthDateElement = result.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
 				logger.debug("td_monthDateElement: {}", td_monthDateElement);
 				if(td_monthDateElement.get(0).asText().contains(month)) {
@@ -106,8 +91,12 @@ public class CrawlerThread extends AbstractCrawler implements Runnable {
 	public void processCrawl() throws CrawlException {
 		
 		try {
-			this.page = parser.getPage(webClient);
-			HtmlTableRow tr_monthNode = getTableRowForMonth();
+			final WebClient webClient = new WebClient();
+			webClient.getOptions().setTimeout(config.getConnectionTimeout());
+			webClient.setJavaScriptTimeout(config.getJavascriptTimeout());
+			final HtmlPage page = parser.getPage(webClient);
+			HtmlTableRow tr_monthNode = getTableRowForMonth(page);
+		
 			if(tr_monthNode != null) {
 				DomNodeList<HtmlElement> anchor_monthNodes = tr_monthNode.getElementsByTagName(Constant.TAG_A);
 				for (HtmlElement anchor_monthNode : anchor_monthNodes) {
@@ -162,7 +151,7 @@ public class CrawlerThread extends AbstractCrawler implements Runnable {
 	 * @return
 	 * @throws CrawlException
 	 */
-	public HtmlElement extractListOfEmailsFromPage(HtmlElement anchor_monthNode, String year, String month) throws CrawlException {
+	private HtmlElement extractListOfEmailsFromPage(HtmlElement anchor_monthNode, String year, String month) throws CrawlException {
 		try {
 			HtmlAnchor anchor = (HtmlAnchor) anchor_monthNode;
 			HtmlPage monthResponse = null;
@@ -211,7 +200,7 @@ public class CrawlerThread extends AbstractCrawler implements Runnable {
 	 * @param tdElements
 	 * @throws IOException
 	 */
-	public void extractEmailContent(HtmlAnchor emailAnchorNode, String year, String month) throws CrawlException {
+	private void extractEmailContent(HtmlAnchor emailAnchorNode, String year, String month) throws CrawlException {
 		try {
 			String emailAddress = null;
 			String emailContent = null;
@@ -223,8 +212,10 @@ public class CrawlerThread extends AbstractCrawler implements Runnable {
 			
 			if(!this.isShutdown() && controller.getNetUtil().isInternetReachable()) {
 				emailResponse = emailAnchorNode.click();
-				emailContent = emailResponse.asXml();
 				emailSentDate = parser.parseEmailSentDate(emailResponse);
+				
+				// Fetch raw email content as text
+				emailContent = extractRawEmailContent(emailResponse);
 				
 				// Write email content to a file: <emailAddress>_<emailSentDate>
 				fileNameBuffer = new StringBuffer();
@@ -244,6 +235,38 @@ public class CrawlerThread extends AbstractCrawler implements Runnable {
 				throw new CrawlException(e);
 			}
 		} 
+	}
+	
+	/**
+	 * 
+	 * @param emailResponse
+	 * @throws CrawlException
+	 */
+	private String extractRawEmailContent(HtmlPage emailResponse) throws CrawlException {
+		String result = null;
+		try {
+			if(!this.isShutdown() && controller.getNetUtil().isInternetReachable()) {
+				HtmlElement table_msgviewElement = emailResponse.getHtmlElementById(Constant.MSGVIEW);
+				List<HtmlElement> tr_rawElements = table_msgviewElement.getElementsByAttribute(Constant.TR, Constant.CLASS, Constant.RAW);
+				HtmlElement tr_rawElement = tr_rawElements.get(0);
+				HtmlTableCell td_rawMsg = (HtmlTableCell)tr_rawElement.getLastChild();
+				
+				DomNodeList<HtmlElement> anchor_rawNodes = td_rawMsg.getElementsByTagName(Constant.TAG_A);
+				HtmlAnchor anchor_rawNode = (HtmlAnchor) anchor_rawNodes.get(0);
+				TextPage rawEmailResponse = anchor_rawNode.click();
+				result = rawEmailResponse.getContent();
+			} else {
+				handleShutdown(crawler);
+			}
+		} catch (Exception e) {
+			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
+				handleShutdown(crawler);
+			} else {
+				logger.error("extract email content failed", e);
+				throw new CrawlException(e);
+			}		
+		}
+		return result;
 	}
 
 	/**
@@ -290,6 +313,14 @@ public class CrawlerThread extends AbstractCrawler implements Runnable {
 
 	public String getMonth() {
 		return month;
+	}
+
+	public void setController(Controller controller) {
+		this.controller = controller;
+	}
+
+	public void setParser(Parser parser) {
+		this.parser = parser;
 	}
 
 	public Controller getController() {
