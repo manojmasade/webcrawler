@@ -262,7 +262,7 @@ public class CrawlerThread extends AbstractCrawler implements Runnable {
 			if(e instanceof UnknownHostException || e instanceof SocketTimeoutException || e instanceof NoRouteToHostException || e instanceof RuntimeException) {
 				handleShutdown(crawler);
 			} else {
-				logger.error("extract email content failed", e);
+				logger.error("extract raw email content failed", e);
 				throw new CrawlException(e);
 			}		
 		}
