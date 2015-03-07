@@ -67,4 +67,8 @@ public class Constant {
 	
 	public static final String CONTENT_FORMAT_XML = "XML";
 	
+	public static final String FILE_EXTENSION_TEXT = ".txt"; 
+	
+	public static final String FILE_EXTENSION_HTML = ".html";
+	
 }
