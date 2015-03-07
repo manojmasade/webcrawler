@@ -62,29 +62,6 @@ public class CrawlerThread extends AbstractCrawler implements Runnable {
 	}
 	
 	/**
-	 * Get table row <tr></tr> for the month
-	 * @return
-	 */
-	private HtmlTableRow getTableRowForMonth(HtmlPage page) {
-		
-		if(page != null) {
-			HtmlElement table_yearElement = parser.parseTableForYear(page, year);
-			HtmlTable table_yearList = (HtmlTable) table_yearElement;
-			List<HtmlTableBody> tbody_yearlist = table_yearList.getBodies();
-			HtmlTableBody tbody_year = tbody_yearlist.get(0);
-			
-			for (final HtmlTableRow result : tbody_year.getRows()) {
-				List<HtmlElement> td_monthDateElement = result.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
-				logger.debug("td_monthDateElement: {}", td_monthDateElement);
-				if(td_monthDateElement.get(0).asText().contains(month)) {
-					return result;	
-				}
-			}	
-		}
-		return null;
-	}
-	
-	/**
 	 * Process page for the month
 	 * @throws CrawlException
 	 */
@@ -143,6 +120,29 @@ public class CrawlerThread extends AbstractCrawler implements Runnable {
 			logger.error("processPage failed", e);
 			throw new CrawlException(e);
 		}
+	}
+	
+	/**
+	 * Get table row <tr></tr> for the month
+	 * @return
+	 */
+	private HtmlTableRow getTableRowForMonth(HtmlPage page) {
+		
+		if(page != null) {
+			HtmlElement table_yearElement = parser.parseTableForYear(page, year);
+			HtmlTable table_yearList = (HtmlTable) table_yearElement;
+			List<HtmlTableBody> tbody_yearlist = table_yearList.getBodies();
+			HtmlTableBody tbody_year = tbody_yearlist.get(0);
+			
+			for (final HtmlTableRow result : tbody_year.getRows()) {
+				List<HtmlElement> td_monthDateElement = result.getElementsByAttribute(Constant.TD, Constant.CLASS, Constant.DATE);
+				logger.debug("td_monthDateElement: {}", td_monthDateElement);
+				if(td_monthDateElement.get(0).asText().contains(month)) {
+					return result;	
+				}
+			}	
+		}
+		return null;
 	}
 	
 	/**
