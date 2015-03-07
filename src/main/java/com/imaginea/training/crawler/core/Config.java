@@ -16,9 +16,11 @@ public class Config {
 	
 	private String emailsDownloadDir = "tmp";
 	
-	private String fileExtension = ".html";
+	private String fileExtension = ".txt";
 	
 	private String crawlFileName = "crawl";
+	
+	private String contentFormat = Constant.CONTENT_FORMAT_TEXT;
 
 	/**
 	 * Resume crawling after connection is available
@@ -132,6 +134,14 @@ public class Config {
 
 	public void setNoOfMonths(int noOfMonths) {
 		this.noOfMonths = noOfMonths;
+	}
+
+	public String getContentFormat() {
+		return contentFormat;
+	}
+
+	public void setContentFormat(String contentFormat) {
+		this.contentFormat = contentFormat;
 	}
 	
 }
