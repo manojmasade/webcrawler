@@ -16,7 +16,7 @@ public class Config {
 	
 	private String emailsDownloadDir = "tmp";
 	
-	private String fileExtension = ".txt";
+	private String fileExtension = Constant.FILE_EXTENSION_TEXT;
 	
 	private String crawlFileName = "crawl";
 	
