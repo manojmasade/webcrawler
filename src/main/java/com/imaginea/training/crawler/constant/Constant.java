@@ -53,6 +53,8 @@ public class Constant {
 	
 	public static final String MSGCOUNT = "msgcount";
 	
+	public static final String RAW = "raw";
+	
 	public static final String STATE_INITIALIZE = "INITIALIZE";
 	
 	public static final String STATE_RUNNING = "RUNNING";
