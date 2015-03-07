@@ -63,4 +63,8 @@ public class Constant {
 	
 	public static final int NO_OF_MONTHS = 12;
 	
+	public static final String CONTENT_FORMAT_TEXT = "TEXT"; 
+	
+	public static final String CONTENT_FORMAT_XML = "XML";
+	
 }
