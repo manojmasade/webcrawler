@@ -42,7 +42,7 @@ public class App {
      * Set args to Config
      * @param args
      */
-    private void setArgs(String[] args) { 
+    public void setArgs(String[] args) { 
     	logger.debug("Arguments length: {}", args.length);
 
     	Map<String, String> argsMap = new LinkedHashMap<>();
@@ -56,21 +56,22 @@ public class App {
     		config.setResumeCrawling(Boolean.valueOf(argsMap.get(Constant.ARG_RESUME)));
     	}
     	if(argsMap.get(Constant.ARG_SAFE_MODE) != null){
-    		config.setResumeCrawling(Boolean.valueOf(argsMap.get(Constant.ARG_SAFE_MODE)));
+    		config.setRunSafeMode(Boolean.valueOf(argsMap.get(Constant.ARG_SAFE_MODE)));
     	}
     }
     
     /**
      * Invokes the process of crawler
      */
-    private void invoke() { 
+    public void invoke() { 
     	logger.info("Java Crawler -- Download emails for specified year" );
     	long processStartTime = System.currentTimeMillis();
     	logger.info("Begin Date:" + new Date());
     	
     	String years[] = { "2014" };
     	for (int i = 0; i < years.length; i++) {
-    		Crawler crawler = (Crawler) context.getBean("crawler", years[i]);
+    		Crawler crawler = (Crawler) context.getBean("crawler");
+    		crawler.setYear(years[i]);
         	Thread yearThread = new Thread(crawler);
         	yearThread.start();	
 		}
