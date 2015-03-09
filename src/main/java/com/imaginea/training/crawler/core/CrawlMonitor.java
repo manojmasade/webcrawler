@@ -47,7 +47,7 @@ public class CrawlMonitor implements Runnable {
 		}
 		logger.info("Crawling process exited");
 		logger.info("Status of months, Completed:{}, Shutdown:{}", crawler.getTotalMonthsCompletedList().size(), crawler.getShutdownMap().size());
-		logger.info("Completed: {}, Shutdown: {}", crawler.getTotalMonthsCompletedList(), crawler.getShutdownMap().keySet()); 
+		logger.info("Completed: {}, Shutdown: {}", crawler.getTotalMonthsCompletedList(), crawler.getShutdownMap().keySet());
 		System.exit(1);
 	}
 

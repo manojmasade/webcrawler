@@ -70,7 +70,6 @@ public class FileUtil implements IFileUtil {
 			byte[] contentInBytes = content.getBytes();
 			fop.write(contentInBytes);
 			fop.flush();
-			//fop.close();
 		 } catch (IOException e) {
 			 logger.error("Creating a file failed", e);
 			 throw new CrawlException(e);
