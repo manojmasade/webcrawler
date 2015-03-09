@@ -30,7 +30,7 @@ public class Config {
 	/**
 	 * Skips internet connectivity check when safeMode is true
 	 */
-	private boolean runSafeMode = false;
+	private boolean runSafeMode = true;
 	
 	/**
 	 * Connection timeout in milliseconds
