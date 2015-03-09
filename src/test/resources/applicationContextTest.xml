@@ -5,10 +5,6 @@ xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.sprin
  
  	<bean id="config" class="com.imaginea.training.crawler.core.Config" scope="singleton" />
  	
- 	<bean id="app" class="com.imaginea.training.crawler.App">
- 		<property name="config" ref="config" />
- 	</bean>
- 	
  	<bean id="fileUtil" class="com.imaginea.training.crawler.util.FileUtil">
  		<property name="config" ref="config" />
  	</bean>
@@ -30,7 +26,6 @@ xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.sprin
 	</bean>
 	
 	<bean id="crawler" class="com.imaginea.training.crawler.core.Crawler" parent="abstractCrawler" scope="prototype">
-		<constructor-arg index="0" value="year" />
 		<property name="controller" ref="controller" />
  		<property name="parser" ref="parser" />
  		<property name="config" ref="config" />
