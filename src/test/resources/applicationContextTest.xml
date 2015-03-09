@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+ 
+ 	<bean id="config" class="com.imaginea.training.crawler.core.Config" scope="singleton" />
+ 	
+ 	<bean id="app" class="com.imaginea.training.crawler.App">
+ 		<property name="config" ref="config" />
+ 	</bean>
+ 	
+ 	<bean id="fileUtil" class="com.imaginea.training.crawler.util.FileUtil">
+ 		<property name="config" ref="config" />
+ 	</bean>
+ 	
+	<bean id="netUtil" class="com.imaginea.training.crawler.util.NetUtil">
+		<property name="config" ref="config" />
+	</bean>
+	
+ 	<bean id="controller" class="com.imaginea.training.crawler.core.Controller">
+ 		<property name="fileUtil" ref="fileUtil" />
+ 		<property name="netUtil" ref="netUtil" />
+ 	</bean>
+ 
+	<bean id="parser" class="com.imaginea.training.crawler.parser.HtmlPageParser" />
+	
+	<bean id="abstractCrawler" class="com.imaginea.training.crawler.core.AbstractCrawler" abstract="true" scope="prototype">
+		<property name="controller" ref="controller" />
+ 		<property name="config" ref="config" />
+	</bean>
+	
+	<bean id="crawler" class="com.imaginea.training.crawler.core.Crawler" parent="abstractCrawler" scope="prototype">
+		<constructor-arg index="0" value="year" />
+		<property name="controller" ref="controller" />
+ 		<property name="parser" ref="parser" />
+ 		<property name="config" ref="config" />
+	</bean>
+	
+</beans>
