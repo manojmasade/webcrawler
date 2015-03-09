@@ -31,8 +31,6 @@ public class Crawler extends AbstractCrawler implements Runnable {
 	
 	private static final Logger logger = LoggerFactory.getLogger(Crawler.class);
 	
-	private String name;
-	
 	private String year;
 		
 	@Autowired
@@ -62,23 +60,6 @@ public class Crawler extends AbstractCrawler implements Runnable {
 		"Jun", "May", "Apr", "Mar", "Feb", "Jan"
 	};
 
-	public Crawler(String year) {
-		this.year = year;
-		this.name = year;
-	}
-	
-	private void init() {
-		setShutdownDuration(config.getShutdownTime());
-	}
-	
-	private void initMonitorThread() {
-		// Monitor thread
-		CrawlMonitor crawlMonitor = new CrawlMonitor(this);
-		crawlMonitor.setConfig(config);
-		Thread monitor = new Thread(crawlMonitor);
-		monitor.start();
-	}
-
 	@Override
 	public void run() {
 		try {
@@ -95,6 +76,18 @@ public class Crawler extends AbstractCrawler implements Runnable {
 		} catch (CrawlException e) {
 			logger.error("run failed", e);
 		}
+	}
+	
+	private void init() {
+		setShutdownDuration(config.getShutdownTime());
+	}
+	
+	private void initMonitorThread() {
+		// Monitor thread
+		CrawlMonitor crawlMonitor = new CrawlMonitor(this);
+		crawlMonitor.setConfig(config);
+		Thread monitor = new Thread(crawlMonitor);
+		monitor.start();
 	}
 
 	/**
@@ -202,7 +195,7 @@ public class Crawler extends AbstractCrawler implements Runnable {
 	@Override
 	public void storeCrawlersData() {
 		logger.debug("store crawlers data");
-		if(!this.getShutdownMap().containsKey(this.name)) {
+		if(!this.getShutdownMap().containsKey(this.year)) {
 			getController().getFileUtil().createFile(config.getEmailsDownloadDir(), config.getCrawlFileName(), Constant.STATE_INITIALIZE);
 			this.setShutdown(true);
 			this.setExit(true);
@@ -210,14 +203,6 @@ public class Crawler extends AbstractCrawler implements Runnable {
 		}
 	}
 	
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
 	public String[] getMonths() {
 		return months;
 	}
@@ -296,6 +281,14 @@ public class Crawler extends AbstractCrawler implements Runnable {
 
 	public void setConfig(Config config) {
 		this.config = config;
+	}
+
+	public void setYear(String year) {
+		this.year = year;
+	}
+
+	public void setMonths(String[] months) {
+		this.months = months;
 	}
 	
 }
