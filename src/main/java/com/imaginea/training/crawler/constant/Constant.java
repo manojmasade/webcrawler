@@ -71,4 +71,8 @@ public class Constant {
 	
 	public static final String FILE_EXTENSION_HTML = ".html";
 	
+	public static final String ARG_RESUME = "resume"; 
+	
+	public static final String ARG_SAFE_MODE = "safemode";
+	
 }
