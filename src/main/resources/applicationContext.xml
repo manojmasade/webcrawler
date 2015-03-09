@@ -30,7 +30,6 @@ xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.sprin
 	</bean>
 	
 	<bean id="crawler" class="com.imaginea.training.crawler.core.Crawler" parent="abstractCrawler" scope="prototype">
-		<constructor-arg index="0" value="year" />
 		<property name="controller" ref="controller" />
  		<property name="parser" ref="parser" />
  		<property name="config" ref="config" />
