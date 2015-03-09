@@ -13,10 +13,12 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jdk.version>1.7</jdk.version>
     <htmlunit.version>2.15</htmlunit.version>
-    <junit.version>3.8.1</junit.version>
+    <junit.version>4.8.1</junit.version>
     <slf4j.version>1.7.10</slf4j.version>
     <logback-classic.version>1.1.2</logback-classic.version>
     <spring-context.version>4.1.5.RELEASE</spring-context.version>
+    <spring-tx.version>3.1.2.RELEASE</spring-tx.version>
+    <spring-test.version>2.5</spring-test.version>
   </properties>
 
   <dependencies>
@@ -50,6 +52,19 @@
 		<artifactId>spring-context</artifactId>
 		<version>${spring-context.version}</version>
 	</dependency>
+	
+   <dependency>
+		<groupId>org.springframework</groupId>
+		<artifactId>spring-tx</artifactId>
+		<version>${spring-tx.version}</version>
+   </dependency>
+	
+	<dependency>
+		<groupId>org.springframework</groupId>
+		<artifactId>spring-test</artifactId>
+		<version>${spring-test.version}</version>
+	</dependency>
+	
   </dependencies>
 
   <build>
